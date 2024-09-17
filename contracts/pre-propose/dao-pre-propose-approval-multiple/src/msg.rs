@@ -1,10 +1,13 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{CosmosMsg, Empty};
+use cosmwasm_std::Empty;
 use dao_pre_propose_base::msg::{
     ExecuteMsg as ExecuteBase, InstantiateMsg as InstantiateBase, MigrateMsg as MigrateBase,
     QueryMsg as QueryBase,
 };
-use dao_voting::{proposal::SingleChoiceProposeMsg as ProposeMsg, voting::SingleChoiceAutoVote};
+use dao_voting::{
+    multiple_choice::{MultipleChoiceAutoVote, MultipleChoiceOptions},
+    proposal::MultipleChoiceProposeMsg as ProposeMsg,
+};
 
 pub use dao_voting::approval::ApprovalExecuteExt as ExecuteExt;
 
@@ -12,13 +15,13 @@ pub use dao_voting::approval::ApprovalExecuteExt as ExecuteExt;
 pub enum ProposeMessage {
     /// The propose message used to make a proposal to this
     /// module. Note that this is identical to the propose message
-    /// used by dao-proposal-single, except that it omits the
+    /// used by dao-proposal-multiple, except that it omits the
     /// `proposer` field which it fills in for the sender.
     Propose {
         title: String,
         description: String,
-        msgs: Vec<CosmosMsg<Empty>>,
-        vote: Option<SingleChoiceAutoVote>,
+        choices: MultipleChoiceOptions,
+        vote: Option<MultipleChoiceAutoVote>,
     },
 }
 

@@ -1,0 +1,44 @@
+[package]
+name = "dao-pre-propose-approval-multiple"
+authors = ["ekez <ekez@withoutdoing.com>", "Jake Hartnell <no-reply@no-reply.com>", "noah <noah@daodao.zone>"]
+description = "A DAO DAO pre-propose module handling a proposal approval flow for for dao-proposal-multiple."
+edition = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+version = { workspace = true }
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# for more explicit tests, cargo test --features=backtraces
+backtraces = ["cosmwasm-std/backtraces"]
+# use library feature to disable all instantiate/execute/query exports
+library = []
+
+[dependencies]
+cosmwasm-std = { workspace = true }
+cosmwasm-schema = { workspace = true }
+cw-storage-plus = { workspace = true }
+cw2 = { workspace = true }
+cw-paginate-storage = { workspace = true }
+dao-pre-propose-base = { workspace = true }
+dao-voting = { workspace = true }
+thiserror = { workspace = true }
+dao-interface = { workspace = true }
+
+[dev-dependencies]
+cw-denom = { workspace = true }
+cw-multi-test = { workspace = true }
+cw-utils = { workspace = true }
+cw4 = { workspace = true }
+cw4-group = { workspace = true }
+cw20 = { workspace = true }
+cw20-base = { workspace = true }
+dao-dao-core = { workspace = true }
+dao-hooks = { workspace = true }
+dao-testing = { workspace = true }
+dao-voting = { workspace = true }
+dao-voting-cw4 = { workspace = true }
+dao-voting-cw20-staked = { workspace = true }
+dao-proposal-multiple = { workspace = true }

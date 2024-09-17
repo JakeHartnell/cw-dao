@@ -44,7 +44,7 @@ pub struct ApprovalProposal<ProposeMsg> {
     /// The address that created the proposal.
     pub proposer: Addr,
     /// The propose message that ought to be executed on the proposal
-    /// message if this proposal is approved.
+    /// module if this proposal is approved.
     pub msg: ProposeMsg,
     /// Snapshot of the deposit info at the time of proposal
     /// submission.
