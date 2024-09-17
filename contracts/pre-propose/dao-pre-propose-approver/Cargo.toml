@@ -24,7 +24,6 @@ cw-utils = { workspace = true }
 cw2 = { workspace = true }
 dao-interface = { workspace = true }
 dao-pre-propose-base = { workspace = true }
-dao-pre-propose-approval-single = { workspace = true, features = ["library"] }
 dao-voting = { workspace = true }
 
 [dev-dependencies]
@@ -36,6 +35,7 @@ cw20 = { workspace = true }
 cw20-base = { workspace = true }
 dao-dao-core = { workspace = true }
 dao-hooks = { workspace = true }
+dao-pre-propose-approval-single = { workspace = true, features = ["library"] }
 dao-proposal-single = { workspace = true, features = ["library"] }
 dao-testing = { workspace = true }
 dao-voting = { workspace = true }

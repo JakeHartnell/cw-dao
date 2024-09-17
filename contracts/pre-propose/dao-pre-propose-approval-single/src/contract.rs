@@ -9,15 +9,16 @@ use cw_paginate_storage::paginate_map_values;
 use dao_pre_propose_base::{
     error::PreProposeError, msg::ExecuteMsg as ExecuteBase, state::PreProposeContract,
 };
+use dao_voting::approval::{ApprovalProposalStatus, ApproverProposeMessage};
 use dao_voting::deposit::DepositRefundPolicy;
 use dao_voting::proposal::SingleChoiceProposeMsg as ProposeMsg;
 
 use crate::msg::{
-    ApproverProposeMessage, ExecuteExt, ExecuteMsg, InstantiateExt, InstantiateMsg, MigrateMsg,
-    ProposeMessage, ProposeMessageInternal, QueryExt, QueryMsg,
+    ExecuteExt, ExecuteMsg, InstantiateExt, InstantiateMsg, MigrateMsg, ProposeMessage,
+    ProposeMessageInternal, QueryExt, QueryMsg,
 };
 use crate::state::{
-    advance_approval_id, Proposal, ProposalStatus, APPROVER, COMPLETED_PROPOSALS,
+    advance_approval_id, Proposal, APPROVER, COMPLETED_PROPOSALS,
     CREATED_PROPOSAL_TO_COMPLETED_PROPOSAL, PENDING_PROPOSALS,
 };
 
@@ -129,7 +130,7 @@ pub fn execute_propose(
         deps.storage,
         approval_id,
         &Proposal {
-            status: ProposalStatus::Pending {},
+            status: ApprovalProposalStatus::Pending {},
             approval_id,
             proposer: info.sender,
             msg: propose_msg_internal,
@@ -183,7 +184,7 @@ pub fn execute_approve(
                 deps.storage,
                 id,
                 &Proposal {
-                    status: ProposalStatus::Approved {
+                    status: ApprovalProposalStatus::Approved {
                         created_proposal_id: proposal_id,
                     },
                     approval_id: proposal.approval_id,
@@ -230,7 +231,7 @@ pub fn execute_reject(
         deps.storage,
         id,
         &Proposal {
-            status: ProposalStatus::Rejected {},
+            status: ApprovalProposalStatus::Rejected {},
             approval_id,
             proposer: proposer.clone(),
             msg: msg.clone(),

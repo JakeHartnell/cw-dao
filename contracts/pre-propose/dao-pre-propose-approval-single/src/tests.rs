@@ -22,6 +22,7 @@ use dao_testing::{
 };
 use dao_voting::pre_propose::{PreProposeSubmissionPolicy, PreProposeSubmissionPolicyError};
 use dao_voting::{
+    approval::ApprovalProposalStatus,
     deposit::{CheckedDepositInfo, DepositRefundPolicy, DepositToken, UncheckedDepositInfo},
     pre_propose::{PreProposeInfo, ProposalCreationPolicy},
     status::Status,
@@ -36,7 +37,7 @@ use dao_proposal_single_v241 as dps_v241;
 use dao_voting_cw4_v241 as dvcw4_v241;
 use dao_voting_v241 as dv_v241;
 
-use crate::state::{Proposal, ProposalStatus};
+use crate::state::Proposal;
 use crate::{contract::*, msg::*};
 
 fn get_default_proposal_module_instantiate(
@@ -915,7 +916,7 @@ fn test_pending_proposal_queries() {
         )
         .unwrap();
     assert_eq!(prop1.approval_id, 1);
-    assert_eq!(prop1.status, ProposalStatus::Pending {});
+    assert_eq!(prop1.status, ApprovalProposalStatus::Pending {});
 
     let prop1: Proposal = app
         .wrap()
@@ -927,7 +928,7 @@ fn test_pending_proposal_queries() {
         )
         .unwrap();
     assert_eq!(prop1.approval_id, 1);
-    assert_eq!(prop1.status, ProposalStatus::Pending {});
+    assert_eq!(prop1.status, ApprovalProposalStatus::Pending {});
 
     // Query for the pre-propose proposals
     let pre_propose_props: Vec<Proposal> = app
@@ -1025,7 +1026,7 @@ fn test_completed_proposal_queries() {
         .unwrap();
     assert_eq!(
         prop1.status,
-        ProposalStatus::Approved {
+        ApprovalProposalStatus::Approved {
             created_proposal_id: created_approved_id
         }
     );
@@ -1040,7 +1041,7 @@ fn test_completed_proposal_queries() {
         .unwrap();
     assert_eq!(
         prop1.status,
-        ProposalStatus::Approved {
+        ApprovalProposalStatus::Approved {
             created_proposal_id: created_approved_id
         }
     );
@@ -1067,7 +1068,7 @@ fn test_completed_proposal_queries() {
             },
         )
         .unwrap();
-    assert_eq!(prop2.status, ProposalStatus::Rejected {});
+    assert_eq!(prop2.status, ApprovalProposalStatus::Rejected {});
 
     // Query for the pre-propose proposals
     let pre_propose_props: Vec<Proposal> = app

@@ -1,10 +1,10 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{CosmosMsg, Empty};
-use dao_pre_propose_approval_single::msg::ApproverProposeMessage;
 use dao_pre_propose_base::msg::{
     ExecuteMsg as ExecuteBase, InstantiateMsg as InstantiateBase, MigrateMsg as MigrateBase,
     QueryMsg as QueryBase,
 };
+use dao_voting::approval::ApproverProposeMessage;
 
 #[cw_serde]
 pub struct InstantiateMsg {
