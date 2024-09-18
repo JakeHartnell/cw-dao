@@ -301,7 +301,7 @@ pub fn instantiate_with_staking_active_threshold(
 
 pub fn instantiate_with_cw4_groups_governance(
     app: &mut App,
-    core_code_id: u64,
+    proposal_module_code_id: u64,
     proposal_module_instantiate: Binary,
     initial_weights: Option<Vec<Cw20Coin>>,
 ) -> Addr {
@@ -353,7 +353,7 @@ pub fn instantiate_with_cw4_groups_governance(
             label: "DAO DAO voting module".to_string(),
         },
         proposal_modules_instantiate_info: vec![ModuleInstantiateInfo {
-            code_id: core_code_id,
+            code_id: proposal_module_code_id,
             msg: proposal_module_instantiate,
             admin: Some(Admin::CoreModule {}),
             funds: vec![],

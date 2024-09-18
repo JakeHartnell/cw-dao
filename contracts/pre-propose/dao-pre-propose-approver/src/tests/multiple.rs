@@ -1,32 +1,33 @@
-use cosmwasm_std::{coins, from_json, to_json_binary, Addr, Coin, Uint128};
+use cosmwasm_std::{coins, from_json, to_json_binary, Addr, Coin, Empty, Uint128};
 use cw2::ContractVersion;
 use cw20::Cw20Coin;
 use cw_denom::UncheckedDenom;
-use cw_multi_test::{App, BankSudo, Executor};
+use cw_multi_test::{App, BankSudo, Contract, ContractWrapper, Executor};
 use dao_interface::proposal::InfoResponse;
+use dao_proposal_multiple::query::{ProposalListResponse, ProposalResponse};
+use dao_voting::multiple_choice::{
+    MultipleChoiceOption, MultipleChoiceOptions, MultipleChoiceVote, VotingStrategy,
+};
 use dao_voting::pre_propose::{PreProposeSubmissionPolicy, PreProposeSubmissionPolicyError};
-use dps::query::{ProposalListResponse, ProposalResponse};
 
 use dao_interface::state::ProposalModule;
 use dao_interface::state::{Admin, ModuleInstantiateInfo};
-use dao_pre_propose_approval_single::{
+use dao_pre_propose_approval_multiple::{
     msg::{
         ExecuteExt, ExecuteMsg, InstantiateExt, InstantiateMsg, ProposeMessage, QueryExt, QueryMsg,
     },
     state::Proposal,
 };
 use dao_pre_propose_base::{error::PreProposeError, msg::DepositInfoResponse, state::Config};
+use dao_proposal_multiple as dpm;
 use dao_proposal_single as dps;
-use dao_testing::contracts::{
-    cw20_base_contract, dao_pre_propose_approval_single_contract,
-    dao_pre_propose_approver_contract, dao_proposal_single_contract,
-};
 use dao_testing::helpers::instantiate_with_cw4_groups_governance;
+use dao_voting::threshold::Threshold;
 use dao_voting::{
     deposit::{CheckedDepositInfo, DepositRefundPolicy, DepositToken, UncheckedDepositInfo},
     pre_propose::{PreProposeInfo, ProposalCreationPolicy},
     status::Status,
-    threshold::{PercentageThreshold, Threshold},
+    threshold::PercentageThreshold,
     voting::Vote,
 };
 
@@ -40,12 +41,61 @@ use crate::msg::{
 // The approver dao contract is the 6th contract instantiated
 const APPROVER: &str = "contract6";
 
-fn get_proposal_module_approval_single_instantiate(
+fn dao_proposal_single_contract() -> Box<dyn Contract<Empty>> {
+    let contract = ContractWrapper::new(
+        dps::contract::execute,
+        dps::contract::instantiate,
+        dps::contract::query,
+    )
+    .with_migrate(dps::contract::migrate)
+    .with_reply(dps::contract::reply);
+    Box::new(contract)
+}
+
+fn dao_proposal_multiple_contract() -> Box<dyn Contract<Empty>> {
+    let contract = ContractWrapper::new(
+        dpm::contract::execute,
+        dpm::contract::instantiate,
+        dpm::contract::query,
+    )
+    .with_migrate(dpm::contract::migrate)
+    .with_reply(dpm::contract::reply);
+    Box::new(contract)
+}
+
+fn cw_pre_propose_base_proposal_multiple() -> Box<dyn Contract<Empty>> {
+    let contract = ContractWrapper::new(
+        dao_pre_propose_approval_multiple::contract::execute,
+        dao_pre_propose_approval_multiple::contract::instantiate,
+        dao_pre_propose_approval_multiple::contract::query,
+    );
+    Box::new(contract)
+}
+
+fn cw20_base_contract() -> Box<dyn Contract<Empty>> {
+    let contract = ContractWrapper::new(
+        cw20_base::contract::execute,
+        cw20_base::contract::instantiate,
+        cw20_base::contract::query,
+    );
+    Box::new(contract)
+}
+
+fn pre_propose_approver_contract() -> Box<dyn Contract<Empty>> {
+    let contract = ContractWrapper::new(
+        crate::contract::execute,
+        crate::contract::instantiate,
+        crate::contract::query,
+    );
+    Box::new(contract)
+}
+
+fn get_proposal_module_approval_multiple_instantiate(
     app: &mut App,
     deposit_info: Option<UncheckedDepositInfo>,
     open_proposal_submission: bool,
-) -> dps::msg::InstantiateMsg {
-    let pre_propose_id = app.store_code(dao_pre_propose_approval_single_contract());
+) -> dpm::msg::InstantiateMsg {
+    let pre_propose_id = app.store_code(cw_pre_propose_base_proposal_multiple());
 
     let submission_policy = if open_proposal_submission {
         PreProposeSubmissionPolicy::Anyone { denylist: vec![] }
@@ -57,9 +107,9 @@ fn get_proposal_module_approval_single_instantiate(
         }
     };
 
-    dps::msg::InstantiateMsg {
-        threshold: Threshold::AbsolutePercentage {
-            percentage: PercentageThreshold::Majority {},
+    dpm::msg::InstantiateMsg {
+        voting_strategy: VotingStrategy::SingleChoice {
+            quorum: PercentageThreshold::Majority {},
         },
         max_voting_period: cw_utils::Duration::Time(86400),
         min_voting_period: None,
@@ -92,7 +142,7 @@ fn get_proposal_module_approver_instantiate(
     _open_proposal_submission: bool,
     pre_propose_approval_contract: String,
 ) -> dps::msg::InstantiateMsg {
-    let pre_propose_id = app.store_code(dao_pre_propose_approver_contract());
+    let pre_propose_id = app.store_code(pre_propose_approver_contract());
 
     dps::msg::InstantiateMsg {
         threshold: Threshold::AbsolutePercentage {
@@ -145,7 +195,7 @@ fn instantiate_cw20_base_default(app: &mut App) -> Addr {
 
 struct DefaultTestSetup {
     core_addr: Addr,
-    proposal_single: Addr,
+    proposal_multiple: Addr,
     pre_propose: Addr,
     approver_core_addr: Addr,
     pre_propose_approver: Addr,
@@ -158,16 +208,17 @@ fn setup_default_test(
     open_proposal_submission: bool,
 ) -> DefaultTestSetup {
     let dps_id = app.store_code(dao_proposal_single_contract());
+    let dpm_id = app.store_code(dao_proposal_multiple_contract());
 
-    // Instantiate SubDAO with pre-propose-approval-single
-    let proposal_module_instantiate = get_proposal_module_approval_single_instantiate(
+    // Instantiate SubDAO with pre-propose-approval-multiple
+    let proposal_module_instantiate = get_proposal_module_approval_multiple_instantiate(
         app,
         deposit_info.clone(),
         open_proposal_submission,
     );
     let core_addr = instantiate_with_cw4_groups_governance(
         app,
-        dps_id,
+        dpm_id,
         to_json_binary(&proposal_module_instantiate).unwrap(),
         Some(vec![
             cw20::Cw20Coin {
@@ -193,12 +244,12 @@ fn setup_default_test(
 
     // Make sure things were set up correctly.
     assert_eq!(proposal_modules.len(), 1);
-    let proposal_single = proposal_modules.into_iter().next().unwrap().address;
+    let proposal_multiple = proposal_modules.into_iter().next().unwrap().address;
     let proposal_creation_policy = app
         .wrap()
         .query_wasm_smart(
-            proposal_single.clone(),
-            &dps::msg::QueryMsg::ProposalCreationPolicy {},
+            proposal_multiple.clone(),
+            &dpm::msg::QueryMsg::ProposalCreationPolicy {},
         )
         .unwrap();
     let pre_propose = match proposal_creation_policy {
@@ -206,7 +257,7 @@ fn setup_default_test(
         _ => panic!("expected a module for the proposal creation policy"),
     };
     assert_eq!(
-        proposal_single,
+        proposal_multiple,
         get_proposal_module(app, pre_propose.clone())
     );
     assert_eq!(core_addr, get_dao(app, pre_propose.clone()));
@@ -279,7 +330,7 @@ fn setup_default_test(
 
     DefaultTestSetup {
         core_addr,
-        proposal_single,
+        proposal_multiple,
         pre_propose,
         approver_core_addr,
         proposal_single_approver,
@@ -295,7 +346,20 @@ fn make_pre_proposal(app: &mut App, pre_propose: Addr, proposer: &str, funds: &[
             msg: ProposeMessage::Propose {
                 title: "title".to_string(),
                 description: "description".to_string(),
-                msgs: vec![],
+                choices: MultipleChoiceOptions {
+                    options: vec![
+                        MultipleChoiceOption {
+                            title: "A".to_string(),
+                            description: "A".to_string(),
+                            msgs: vec![],
+                        },
+                        MultipleChoiceOption {
+                            title: "B".to_string(),
+                            description: "B".to_string(),
+                            msgs: vec![],
+                        },
+                    ],
+                },
                 vote: None,
             },
         },
@@ -361,7 +425,7 @@ fn get_balance_native(app: &App, who: &str, denom: &str) -> Uint128 {
     res.amount
 }
 
-fn vote(app: &mut App, module: Addr, sender: &str, id: u64, position: Vote) -> Status {
+fn vote_single(app: &mut App, module: Addr, sender: &str, id: u64, position: Vote) -> Status {
     app.execute_contract(
         Addr::unchecked(sender),
         module.clone(),
@@ -374,9 +438,32 @@ fn vote(app: &mut App, module: Addr, sender: &str, id: u64, position: Vote) -> S
     )
     .unwrap();
 
-    let proposal: ProposalResponse = app
+    let proposal: dps::query::ProposalResponse = app
         .wrap()
         .query_wasm_smart(module, &dps::msg::QueryMsg::Proposal { proposal_id: id })
+        .unwrap();
+
+    proposal.proposal.status
+}
+
+fn vote_multiple(app: &mut App, module: Addr, sender: &str, id: u64, position: u32) -> Status {
+    app.execute_contract(
+        Addr::unchecked(sender),
+        module.clone(),
+        &dpm::msg::ExecuteMsg::Vote {
+            proposal_id: id,
+            vote: MultipleChoiceVote {
+                option_id: position,
+            },
+            rationale: None,
+        },
+        &[],
+    )
+    .unwrap();
+
+    let proposal: ProposalResponse = app
+        .wrap()
+        .query_wasm_smart(module, &dpm::msg::QueryMsg::Proposal { proposal_id: id })
         .unwrap();
 
     proposal.proposal.status
@@ -412,11 +499,11 @@ fn get_deposit_info(app: &App, module: Addr, id: u64) -> DepositInfoResponse {
         .unwrap()
 }
 
-fn get_proposals(app: &App, module: Addr) -> ProposalListResponse {
+fn get_multiple_proposals(app: &App, module: Addr) -> ProposalListResponse {
     app.wrap()
         .query_wasm_smart(
             module,
-            &dps::msg::QueryMsg::ListProposals {
+            &dpm::msg::QueryMsg::ListProposals {
                 start_after: None,
                 limit: None,
             },
@@ -424,13 +511,28 @@ fn get_proposals(app: &App, module: Addr) -> ProposalListResponse {
         .unwrap()
 }
 
-fn get_latest_proposal_id(app: &App, module: Addr) -> u64 {
+fn get_latest_single_proposal_id(app: &App, module: Addr) -> u64 {
+    // Check prop was created in the main DAO
+    let props: dps::query::ProposalListResponse = app
+        .wrap()
+        .query_wasm_smart(
+            module,
+            &dps::msg::QueryMsg::ListProposals {
+                start_after: None,
+                limit: None,
+            },
+        )
+        .unwrap();
+    props.proposals[props.proposals.len() - 1].id
+}
+
+fn get_latest_multiple_proposal_id(app: &App, module: Addr) -> u64 {
     // Check prop was created in the main DAO
     let props: ProposalListResponse = app
         .wrap()
         .query_wasm_smart(
             module,
-            &dps::msg::QueryMsg::ListProposals {
+            &dpm::msg::QueryMsg::ListProposals {
                 start_after: None,
                 limit: None,
             },
@@ -523,7 +625,7 @@ fn close_proposal(app: &mut App, module: Addr, sender: &str, proposal_id: u64) {
     app.execute_contract(
         Addr::unchecked(sender),
         module,
-        &dps::msg::ExecuteMsg::Close { proposal_id },
+        &dpm::msg::ExecuteMsg::Close { proposal_id },
         &[],
     )
     .unwrap();
@@ -533,7 +635,7 @@ fn execute_proposal(app: &mut App, module: Addr, sender: &str, proposal_id: u64)
     app.execute_contract(
         Addr::unchecked(sender),
         module,
-        &dps::msg::ExecuteMsg::Execute { proposal_id },
+        &dpm::msg::ExecuteMsg::Execute { proposal_id },
         &[],
     )
     .unwrap();
@@ -541,7 +643,7 @@ fn execute_proposal(app: &mut App, module: Addr, sender: &str, proposal_id: u64)
 
 fn approve_proposal(app: &mut App, module: Addr, sender: &str, proposal_id: u64) {
     // Approver votes on prop
-    vote(app, module.clone(), sender, proposal_id, Vote::Yes);
+    vote_single(app, module.clone(), sender, proposal_id, Vote::Yes);
     // Approver executes prop
     execute_proposal(app, module, sender, proposal_id);
 }
@@ -574,7 +676,7 @@ fn test_native_permutation(
 
     let DefaultTestSetup {
         core_addr,
-        proposal_single,
+        proposal_multiple,
         pre_propose,
         approver_core_addr: _,
         proposal_single_approver,
@@ -595,7 +697,7 @@ fn test_native_permutation(
     let _pre_propose_id = make_pre_proposal(&mut app, pre_propose, "ekez", &coins(10, "ujuno"));
 
     // Check no props created on main DAO yet
-    let props = get_proposals(&app, proposal_single.clone());
+    let props = get_multiple_proposals(&app, proposal_multiple.clone());
     assert_eq!(props.proposals.len(), 0);
 
     // Make sure it went away.
@@ -606,10 +708,10 @@ fn test_native_permutation(
     match approval_status {
         ApprovalStatus::Approved => {
             // Get approver proposal id
-            let id = get_latest_proposal_id(&app, proposal_single_approver.clone());
+            let id = get_latest_single_proposal_id(&app, proposal_single_approver.clone());
 
             // Approver votes on prop
-            vote(
+            vote_single(
                 &mut app,
                 proposal_single_approver.clone(),
                 "ekez",
@@ -620,8 +722,8 @@ fn test_native_permutation(
             execute_proposal(&mut app, proposal_single_approver, "ekez", id);
 
             // Check prop was created in the main DAO
-            let id = get_latest_proposal_id(&app, proposal_single.clone());
-            let props = get_proposals(&app, proposal_single.clone());
+            let id = get_latest_multiple_proposal_id(&app, proposal_multiple.clone());
+            let props = get_multiple_proposals(&app, proposal_multiple.clone());
             assert_eq!(props.proposals.len(), 1);
 
             // Voting happens on newly created proposal
@@ -631,19 +733,20 @@ fn test_native_permutation(
                 _,
                 fn(&mut App, Addr, &str, u64) -> (),
             ) = match end_status {
-                EndStatus::Passed => (Vote::Yes, Status::Passed, execute_proposal),
-                EndStatus::Failed => (Vote::No, Status::Rejected, close_proposal),
+                EndStatus::Passed => (0, Status::Passed, execute_proposal),
+                EndStatus::Failed => (2, Status::Rejected, close_proposal),
             };
-            let new_status = vote(&mut app, proposal_single.clone(), "ekez", id, position);
+            let new_status =
+                vote_multiple(&mut app, proposal_multiple.clone(), "ekez", id, position);
             assert_eq!(new_status, expected_status);
 
             // Close or execute the proposal to trigger a refund.
-            trigger_refund(&mut app, proposal_single, "ekez", id);
+            trigger_refund(&mut app, proposal_multiple, "ekez", id);
         }
         ApprovalStatus::Rejected => {
             // Approver votes on prop
             // No proposal is created so there is no voting
-            vote(
+            vote_single(
                 &mut app,
                 proposal_single_approver.clone(),
                 "ekez",
@@ -654,7 +757,7 @@ fn test_native_permutation(
             close_proposal(&mut app, proposal_single_approver, "ekez", 1);
 
             // No prop created
-            let props = get_proposals(&app, proposal_single);
+            let props = get_multiple_proposals(&app, proposal_multiple);
             assert_eq!(props.proposals.len(), 0);
         }
     };
@@ -682,7 +785,7 @@ fn test_cw20_permutation(
 
     let DefaultTestSetup {
         core_addr,
-        proposal_single,
+        proposal_multiple,
         pre_propose,
         approver_core_addr: _,
         proposal_single_approver,
@@ -709,7 +812,7 @@ fn test_cw20_permutation(
     let _pre_propose_id = make_pre_proposal(&mut app, pre_propose.clone(), "ekez", &[]);
 
     // Check no props created on main DAO yet
-    let props = get_proposals(&app, proposal_single.clone());
+    let props = get_multiple_proposals(&app, proposal_multiple.clone());
     assert_eq!(props.proposals.len(), 0);
 
     // Make sure it went await.
@@ -720,10 +823,10 @@ fn test_cw20_permutation(
     match approval_status {
         ApprovalStatus::Approved => {
             // Get approver proposal id
-            let id = get_latest_proposal_id(&app, proposal_single_approver.clone());
+            let id = get_latest_single_proposal_id(&app, proposal_single_approver.clone());
 
             // Approver votes on prop
-            vote(
+            vote_single(
                 &mut app,
                 proposal_single_approver.clone(),
                 "ekez",
@@ -734,8 +837,8 @@ fn test_cw20_permutation(
             execute_proposal(&mut app, proposal_single_approver, "ekez", id);
 
             // Check prop was created in the main DAO
-            let id = get_latest_proposal_id(&app, proposal_single.clone());
-            let props = get_proposals(&app, proposal_single.clone());
+            let id = get_latest_multiple_proposal_id(&app, proposal_multiple.clone());
+            let props = get_multiple_proposals(&app, proposal_multiple.clone());
             assert_eq!(props.proposals.len(), 1);
 
             // Voting happens on newly created proposal
@@ -745,19 +848,20 @@ fn test_cw20_permutation(
                 _,
                 fn(&mut App, Addr, &str, u64) -> (),
             ) = match end_status {
-                EndStatus::Passed => (Vote::Yes, Status::Passed, execute_proposal),
-                EndStatus::Failed => (Vote::No, Status::Rejected, close_proposal),
+                EndStatus::Passed => (1, Status::Passed, execute_proposal),
+                EndStatus::Failed => (2, Status::Rejected, close_proposal),
             };
-            let new_status = vote(&mut app, proposal_single.clone(), "ekez", id, position);
+            let new_status =
+                vote_multiple(&mut app, proposal_multiple.clone(), "ekez", id, position);
             assert_eq!(new_status, expected_status);
 
             // Close or execute the proposal to trigger a refund.
-            trigger_refund(&mut app, proposal_single, "ekez", id);
+            trigger_refund(&mut app, proposal_multiple, "ekez", id);
         }
         ApprovalStatus::Rejected => {
             // Approver votes on prop
             // No proposal is created so there is no voting
-            vote(
+            vote_single(
                 &mut app,
                 proposal_single_approver.clone(),
                 "ekez",
@@ -768,7 +872,7 @@ fn test_cw20_permutation(
             close_proposal(&mut app, proposal_single_approver, "ekez", 1);
 
             // No prop created
-            let props = get_proposals(&app, proposal_single);
+            let props = get_multiple_proposals(&app, proposal_multiple);
             assert_eq!(props.proposals.len(), 0);
         }
     };
@@ -974,7 +1078,7 @@ fn test_multiple_open_proposals() {
 
     let DefaultTestSetup {
         core_addr: _,
-        proposal_single,
+        proposal_multiple,
         pre_propose,
         approver_core_addr: _,
         proposal_single_approver,
@@ -998,14 +1102,14 @@ fn test_multiple_open_proposals() {
     assert_eq!(10, balance.u128());
 
     // Approver DAO approves prop, balance remains the same
-    let approver_prop_id = get_latest_proposal_id(&app, proposal_single_approver.clone());
+    let approver_prop_id = get_latest_single_proposal_id(&app, proposal_single_approver.clone());
     approve_proposal(
         &mut app,
         proposal_single_approver.clone(),
         "ekez",
         approver_prop_id,
     );
-    let first_id = get_latest_proposal_id(&app, proposal_single.clone());
+    let first_id = get_latest_multiple_proposal_id(&app, proposal_multiple.clone());
     let balance = get_balance_native(&app, "ekez", "ujuno");
     assert_eq!(10, balance.u128());
 
@@ -1015,47 +1119,35 @@ fn test_multiple_open_proposals() {
     assert_eq!(0, balance.u128());
 
     // Approver DAO votes to approves, balance remains the same
-    let approver_prop_id = get_latest_proposal_id(&app, proposal_single_approver.clone());
+    let approver_prop_id = get_latest_single_proposal_id(&app, proposal_single_approver.clone());
     approve_proposal(&mut app, proposal_single_approver, "ekez", approver_prop_id);
-    let second_id = get_latest_proposal_id(&app, proposal_single.clone());
+    let second_id = get_latest_multiple_proposal_id(&app, proposal_multiple.clone());
     let balance = get_balance_native(&app, "ekez", "ujuno");
     assert_eq!(0, balance.u128());
 
     // Finish up the first proposal.
-    let new_status = vote(
-        &mut app,
-        proposal_single.clone(),
-        "ekez",
-        first_id,
-        Vote::Yes,
-    );
+    let new_status = vote_multiple(&mut app, proposal_multiple.clone(), "ekez", first_id, 0);
     assert_eq!(Status::Passed, new_status);
 
     // Still zero.
     let balance = get_balance_native(&app, "ekez", "ujuno");
     assert_eq!(0, balance.u128());
 
-    execute_proposal(&mut app, proposal_single.clone(), "ekez", first_id);
+    execute_proposal(&mut app, proposal_multiple.clone(), "ekez", first_id);
 
     // First proposal refunded.
     let balance = get_balance_native(&app, "ekez", "ujuno");
     assert_eq!(10, balance.u128());
 
     // Finish up the second proposal.
-    let new_status = vote(
-        &mut app,
-        proposal_single.clone(),
-        "ekez",
-        second_id,
-        Vote::No,
-    );
+    let new_status = vote_multiple(&mut app, proposal_multiple.clone(), "ekez", second_id, 2);
     assert_eq!(Status::Rejected, new_status);
 
     // Still zero.
     let balance = get_balance_native(&app, "ekez", "ujuno");
     assert_eq!(10, balance.u128());
 
-    close_proposal(&mut app, proposal_single, "ekez", second_id);
+    close_proposal(&mut app, proposal_multiple, "ekez", second_id);
 
     // All deposits have been refunded.
     let balance = get_balance_native(&app, "ekez", "ujuno");
@@ -1071,7 +1163,7 @@ fn test_set_version() {
 
     let DefaultTestSetup {
         core_addr: _,
-        proposal_single: _,
+        proposal_multiple: _,
         pre_propose: _,
         approver_core_addr: _,
         proposal_single_approver: _,
@@ -1113,7 +1205,7 @@ fn test_permissions() {
 
     let DefaultTestSetup {
         core_addr,
-        proposal_single: _,
+        proposal_multiple: _,
         pre_propose,
         approver_core_addr: _,
         proposal_single_approver: _,
@@ -1155,7 +1247,20 @@ fn test_permissions() {
                 msg: ProposeMessage::Propose {
                     title: "I would like to join the DAO".to_string(),
                     description: "though, I am currently not a member.".to_string(),
-                    msgs: vec![],
+                    choices: MultipleChoiceOptions {
+                        options: vec![
+                            MultipleChoiceOption {
+                                title: "A".to_string(),
+                                description: "A".to_string(),
+                                msgs: vec![],
+                            },
+                            MultipleChoiceOption {
+                                title: "B".to_string(),
+                                description: "B".to_string(),
+                                msgs: vec![],
+                            },
+                        ],
+                    },
                     vote: None,
                 },
             },
@@ -1179,7 +1284,7 @@ fn test_approval_and_rejection_permissions() {
 
     let DefaultTestSetup {
         core_addr: _,
-        proposal_single: _,
+        proposal_multiple: _,
         pre_propose,
         approver_core_addr: _,
         proposal_single_approver: _,
@@ -1245,7 +1350,7 @@ fn test_propose_open_proposal_submission() {
 
     let DefaultTestSetup {
         core_addr: _,
-        proposal_single,
+        proposal_multiple,
         pre_propose,
         approver_core_addr: _,
         proposal_single_approver,
@@ -1266,7 +1371,7 @@ fn test_propose_open_proposal_submission() {
     mint_natives(&mut app, "nonmember", coins(10, "ujuno"));
     let pre_propose_id = make_pre_proposal(&mut app, pre_propose, "nonmember", &coins(10, "ujuno"));
 
-    let approver_prop_id = get_latest_proposal_id(&app, proposal_single_approver.clone());
+    let approver_prop_id = get_latest_single_proposal_id(&app, proposal_single_approver.clone());
     let pre_propose_id_from_proposal: u64 = app
         .wrap()
         .query_wasm_smart(
@@ -1295,10 +1400,10 @@ fn test_propose_open_proposal_submission() {
 
     // Approver DAO votes to approves
     approve_proposal(&mut app, proposal_single_approver, "ekez", approver_prop_id);
-    let id = get_latest_proposal_id(&app, proposal_single.clone());
+    let id = get_latest_multiple_proposal_id(&app, proposal_multiple.clone());
 
     // Member votes.
-    let new_status = vote(&mut app, proposal_single, "ekez", id, Vote::Yes);
+    let new_status = vote_multiple(&mut app, proposal_multiple, "ekez", id, 1);
     assert_eq!(Status::Passed, new_status)
 }
 
@@ -1311,7 +1416,7 @@ fn test_update_config() {
 
     let DefaultTestSetup {
         core_addr,
-        proposal_single,
+        proposal_multiple,
         pre_propose,
         approver_core_addr: _,
         proposal_single_approver,
@@ -1334,14 +1439,14 @@ fn test_update_config() {
     let _pre_propose_id = make_pre_proposal(&mut app, pre_propose.clone(), "ekez", &[]);
 
     // Approver DAO votes to approves
-    let approver_prop_id = get_latest_proposal_id(&app, proposal_single_approver.clone());
+    let approver_prop_id = get_latest_single_proposal_id(&app, proposal_single_approver.clone());
     approve_proposal(
         &mut app,
         proposal_single_approver.clone(),
         "ekez",
         approver_prop_id,
     );
-    let id = get_latest_proposal_id(&app, proposal_single.clone());
+    let id = get_latest_multiple_proposal_id(&app, proposal_multiple.clone());
 
     update_config(
         &mut app,
@@ -1386,14 +1491,14 @@ fn test_update_config() {
         make_pre_proposal(&mut app, pre_propose.clone(), "ekez", &coins(10, "ujuno"));
 
     // Approver DAO votes to approve prop
-    let approver_prop_id = get_latest_proposal_id(&app, proposal_single_approver.clone());
+    let approver_prop_id = get_latest_single_proposal_id(&app, proposal_single_approver.clone());
     approve_proposal(
         &mut app,
         proposal_single_approver.clone(),
         "ekez",
         approver_prop_id,
     );
-    let new_id = get_latest_proposal_id(&app, proposal_single_approver);
+    let new_id = get_latest_single_proposal_id(&app, proposal_single_approver);
 
     let info = get_deposit_info(&app, pre_propose.clone(), new_id);
     assert_eq!(
@@ -1409,10 +1514,10 @@ fn test_update_config() {
     );
 
     // Both proposals should be allowed to complete.
-    vote(&mut app, proposal_single.clone(), "ekez", id, Vote::Yes);
-    vote(&mut app, proposal_single.clone(), "ekez", new_id, Vote::Yes);
-    execute_proposal(&mut app, proposal_single.clone(), "ekez", id);
-    execute_proposal(&mut app, proposal_single.clone(), "ekez", new_id);
+    vote_multiple(&mut app, proposal_multiple.clone(), "ekez", id, 0);
+    vote_multiple(&mut app, proposal_multiple.clone(), "ekez", new_id, 1);
+    execute_proposal(&mut app, proposal_multiple.clone(), "ekez", id);
+    execute_proposal(&mut app, proposal_multiple.clone(), "ekez", new_id);
     // Deposit should not have been refunded (never policy in use).
     let balance = get_balance_native(&app, "ekez", "ujuno");
     assert_eq!(balance, Uint128::new(0));
@@ -1421,7 +1526,7 @@ fn test_update_config() {
     let err = update_config_should_fail(
         &mut app,
         pre_propose.clone(),
-        proposal_single.as_str(),
+        proposal_multiple.as_str(),
         None,
         PreProposeSubmissionPolicy::Anyone { denylist: vec![] },
     );
@@ -1540,7 +1645,7 @@ fn test_approver_can_propose() {
         ..
     } = setup_default_test(&mut app, None, true);
 
-    // Only the pre-propose-approval-single contract can propose.
+    // Only the pre-propose-approval-multiple contract can propose.
     assert!(query_can_propose(
         &app,
         pre_propose_approver.clone(),
@@ -1562,7 +1667,7 @@ fn test_withdraw() {
 
     let DefaultTestSetup {
         core_addr,
-        proposal_single,
+        proposal_multiple,
         pre_propose,
         approver_core_addr: _,
         proposal_single_approver,
@@ -1572,7 +1677,7 @@ fn test_withdraw() {
     let err = withdraw_should_fail(
         &mut app,
         pre_propose.clone(),
-        proposal_single.as_str(),
+        proposal_multiple.as_str(),
         Some(UncheckedDenom::Native("ujuno".to_string())),
     );
     assert_eq!(err, PreProposeError::NotDao {});
@@ -1631,14 +1736,14 @@ fn test_withdraw() {
         make_pre_proposal(&mut app, pre_propose.clone(), "ekez", &coins(10, "ujuno"));
 
     // Approver DAO votes to approve
-    let approver_prop_id = get_latest_proposal_id(&app, proposal_single_approver.clone());
+    let approver_prop_id = get_latest_single_proposal_id(&app, proposal_single_approver.clone());
     approve_proposal(
         &mut app,
         proposal_single_approver.clone(),
         "ekez",
         approver_prop_id,
     );
-    let native_id = get_latest_proposal_id(&app, proposal_single_approver.clone());
+    let native_id = get_latest_single_proposal_id(&app, proposal_single_approver.clone());
 
     // Update the config to use a cw20 token.
     let cw20_address = instantiate_cw20_base_default(&mut app);
@@ -1670,9 +1775,9 @@ fn test_withdraw() {
     let _cw20_pre_propose_id = make_pre_proposal(&mut app, pre_propose.clone(), "ekez", &[]);
 
     // Approver DAO votes to approve
-    let approver_prop_id = get_latest_proposal_id(&app, proposal_single_approver.clone());
+    let approver_prop_id = get_latest_single_proposal_id(&app, proposal_single_approver.clone());
     approve_proposal(&mut app, proposal_single_approver, "ekez", approver_prop_id);
-    let cw20_id = get_latest_proposal_id(&app, proposal_single.clone());
+    let cw20_id = get_latest_multiple_proposal_id(&app, proposal_multiple.clone());
 
     // There is now a pending proposal and cw20 tokens in the
     // pre-propose module that should be returned on that proposal's
@@ -1686,36 +1791,24 @@ fn test_withdraw() {
 
     // Proposal should still be executable! We just get removed from
     // the proposal module's hook receiver list.
-    vote(
-        &mut app,
-        proposal_single.clone(),
-        "ekez",
-        cw20_id,
-        Vote::Yes,
-    );
-    execute_proposal(&mut app, proposal_single.clone(), "ekez", cw20_id);
+    vote_multiple(&mut app, proposal_multiple.clone(), "ekez", cw20_id, 0);
+    execute_proposal(&mut app, proposal_multiple.clone(), "ekez", cw20_id);
 
     // Make sure the proposal module has fallen back to anyone can
     // propose becuase of our malfunction.
     let proposal_creation_policy: ProposalCreationPolicy = app
         .wrap()
         .query_wasm_smart(
-            proposal_single.clone(),
-            &dps::msg::QueryMsg::ProposalCreationPolicy {},
+            proposal_multiple.clone(),
+            &dpm::msg::QueryMsg::ProposalCreationPolicy {},
         )
         .unwrap();
 
     assert_eq!(proposal_creation_policy, ProposalCreationPolicy::Anyone {});
 
     // Close out the native proposal and it's deposit as well.
-    vote(
-        &mut app,
-        proposal_single.clone(),
-        "ekez",
-        native_id,
-        Vote::No,
-    );
-    close_proposal(&mut app, proposal_single.clone(), "ekez", native_id);
+    vote_multiple(&mut app, proposal_multiple.clone(), "ekez", native_id, 2);
+    close_proposal(&mut app, proposal_multiple.clone(), "ekez", native_id);
     withdraw(
         &mut app,
         pre_propose.clone(),
@@ -1735,7 +1828,7 @@ fn test_reset_approver() {
 
     let DefaultTestSetup {
         core_addr: _,
-        proposal_single: _,
+        proposal_multiple: _,
         pre_propose,
         approver_core_addr,
         proposal_single_approver: _,

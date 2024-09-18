@@ -1826,13 +1826,13 @@ dependencies = [
 
 [[package]]
 name = "dao-pre-propose-approval-multiple"
-version = "2.5.0"
+version = "2.5.1"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
- "cw-denom 2.5.0",
+ "cw-denom 2.5.1",
  "cw-multi-test",
- "cw-paginate-storage 2.5.0",
+ "cw-paginate-storage 2.5.1",
  "cw-storage-plus 1.2.0",
  "cw-utils 1.0.3",
  "cw2 1.1.2",
@@ -1840,15 +1840,15 @@ dependencies = [
  "cw20-base 1.1.2",
  "cw4 1.1.2",
  "cw4-group 1.1.2",
- "dao-dao-core 2.5.0",
- "dao-hooks 2.5.0",
- "dao-interface 2.5.0",
- "dao-pre-propose-base 2.5.0",
- "dao-proposal-multiple 2.5.0",
+ "dao-dao-core 2.5.1",
+ "dao-hooks 2.5.1",
+ "dao-interface 2.5.1",
+ "dao-pre-propose-base 2.5.1",
+ "dao-proposal-multiple 2.5.1",
  "dao-testing",
- "dao-voting 2.5.0",
+ "dao-voting 2.5.1",
  "dao-voting-cw20-staked",
- "dao-voting-cw4 2.5.0",
+ "dao-voting-cw4 2.5.1",
  "thiserror",
 ]
 
@@ -1920,8 +1920,10 @@ dependencies = [
  "dao-dao-core 2.5.1",
  "dao-hooks 2.5.1",
  "dao-interface 2.5.1",
+ "dao-pre-propose-approval-multiple",
  "dao-pre-propose-approval-single 2.5.1",
  "dao-pre-propose-base 2.5.1",
+ "dao-proposal-multiple 2.5.1",
  "dao-proposal-single 2.5.1",
  "dao-testing",
  "dao-voting 2.5.1",

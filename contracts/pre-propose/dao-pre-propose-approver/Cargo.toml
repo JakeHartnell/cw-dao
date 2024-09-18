@@ -1,6 +1,9 @@
 [package]
 name = "dao-pre-propose-approver"
-authors = ["ekez <ekez@withoutdoing.com>", "Jake Hartnell <no-reply@no-reply.com>"]
+authors = [
+  "ekez <ekez@withoutdoing.com>",
+  "Jake Hartnell <no-reply@no-reply.com>",
+]
 description = "A DAO DAO pre-propose module for automatically making approval proposals for dao-pre-propose-approval-single."
 edition = { workspace = true }
 license = { workspace = true }
@@ -35,7 +38,9 @@ cw20 = { workspace = true }
 cw20-base = { workspace = true }
 dao-dao-core = { workspace = true }
 dao-hooks = { workspace = true }
+dao-pre-propose-approval-multiple = { workspace = true, features = ["library"] }
 dao-pre-propose-approval-single = { workspace = true, features = ["library"] }
+dao-proposal-multiple = { workspace = true, features = ["library"] }
 dao-proposal-single = { workspace = true, features = ["library"] }
 dao-testing = { workspace = true }
 dao-voting = { workspace = true }
