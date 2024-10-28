@@ -2697,6 +2697,49 @@ fn test_stake_during_interval() {
 }
 
 #[test]
+fn test_stake_on_edges_of_interval() {
+    let mut suite = SuiteBuilder::base(super::suite::DaoType::Native)
+        .with_rewards_config(RewardsConfig {
+            amount: 100,
+            denom: UncheckedDenom::Native(GOV_DENOM.to_string()),
+            duration: Duration::Height(100),
+            destination: None,
+            continuous: true,
+        })
+        .build();
+
+    suite.assert_amount(100);
+    suite.assert_ends_at(Expiration::AtHeight(100_000_000));
+    suite.assert_duration(100);
+
+    // after half the duration, half the rewards (50) should be distributed.
+    suite.skip_blocks(50);
+
+    // MEMBER1 has 50% voting power, so should receive 50% of the rewards.
+    suite.assert_pending_rewards(MEMBER1, 1, 25);
+
+    // after the full duration, all the rewards (50) should be distributed.
+    suite.skip_blocks(50);
+
+    // MEMBER1 has 50% voting power, so should receive 50% of the rewards.
+    suite.assert_pending_rewards(MEMBER1, 1, 50);
+
+    // change voting power right at the end of the distribution interval.
+    // MEMBER1 now has 80% voting power, an increase from 50%.
+    suite.mint_native(coin(300, GOV_DENOM), MEMBER1);
+    suite.stake_native_tokens(MEMBER1, 300);
+
+    // after another interval, they should earn rewards at the increased rate
+    // (50 more tokens, and they own 80% of them). 50 + 40 = 90
+    suite.skip_blocks(50);
+    suite.assert_pending_rewards(MEMBER1, 1, 90);
+
+    // after 50 more blocks from VP change, there are 40 more rewards.
+    suite.skip_blocks(50);
+    suite.assert_pending_rewards(MEMBER1, 1, 130);
+}
+
+#[test]
 fn test_fund_latest_native() {
     let mut suite = SuiteBuilder::base(super::suite::DaoType::Native).build();
 
