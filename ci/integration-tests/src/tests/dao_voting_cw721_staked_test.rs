@@ -127,7 +127,7 @@ pub fn claim_nfts(chain: &mut Chain, sender: &SigningKey) {
             CONTRACT_NAME,
             "claim_nfts",
             &module::msg::ExecuteMsg::ClaimNfts {
-                token_ids: Some(vec![]),
+                r#type: module::msg::ClaimType::All,
             },
             sender,
             vec![],
