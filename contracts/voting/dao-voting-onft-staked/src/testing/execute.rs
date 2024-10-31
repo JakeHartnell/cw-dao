@@ -205,6 +205,35 @@ pub fn claim_nfts(app: &mut OmniflixApp, module: &Addr, sender: &str) -> AnyResu
     )
 }
 
+pub fn claim_specific_nfts(
+    app: &mut OmniflixApp,
+    module: &Addr,
+    sender: &str,
+    token_ids: &[String],
+) -> AnyResult<AppResponse> {
+    app.execute_contract(
+        addr!(sender),
+        module.clone(),
+        &ExecuteMsg::ClaimNfts {
+            token_ids: Some(token_ids.to_vec()),
+        },
+        &[],
+    )
+}
+
+pub fn claim_legacy_nfts(
+    app: &mut OmniflixApp,
+    module: &Addr,
+    sender: &str,
+) -> AnyResult<AppResponse> {
+    app.execute_contract(
+        addr!(sender),
+        module.clone(),
+        &ExecuteMsg::ClaimNfts { token_ids: None },
+        &[],
+    )
+}
+
 pub fn add_hook(
     app: &mut OmniflixApp,
     module: &Addr,

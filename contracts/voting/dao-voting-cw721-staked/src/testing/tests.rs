@@ -1,8 +1,12 @@
+use cosmwasm_std::storage_keys::to_length_prefixed_nested;
 use cosmwasm_std::testing::{mock_dependencies, mock_env};
-use cosmwasm_std::{to_json_binary, Addr, Coin, Decimal, Empty, Uint128, WasmMsg};
+use cosmwasm_std::{
+    to_json_binary, to_json_vec, Addr, Coin, Decimal, Empty, Storage, Uint128, WasmMsg,
+};
 use cw721_base::msg::{ExecuteMsg as Cw721ExecuteMsg, InstantiateMsg as Cw721InstantiateMsg};
 use cw721_controllers::{NftClaim, NftClaimsResponse};
 use cw_multi_test::{next_block, App, BankSudo, Executor, SudoMsg};
+use cw_storage_plus::Map;
 use cw_utils::Duration;
 use dao_interface::voting::IsActiveResponse;
 use dao_testing::contracts::{
@@ -10,6 +14,7 @@ use dao_testing::contracts::{
 };
 use dao_voting::threshold::{ActiveThreshold, ActiveThresholdResponse};
 
+use crate::testing::execute::{claim_legacy_nfts, claim_specific_nfts};
 use crate::{
     contract::{migrate, CONTRACT_NAME, CONTRACT_VERSION},
     msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, NftContract, QueryMsg},
@@ -296,6 +301,168 @@ fn test_claims() -> anyhow::Result<()> {
 
     let owner = query_nft_owner(&app, &nft, "2")?;
     assert_eq!(owner.owner, CREATOR_ADDR.to_string());
+
+    Ok(())
+}
+
+// I can query and claim my pending legacy claims and non-legacy claims.
+#[test]
+pub fn test_legacy_claims_work() -> anyhow::Result<()> {
+    let CommonTest {
+        mut app,
+        module,
+        nft,
+    } = setup_test(Some(Duration::Height(1)));
+
+    mint_and_stake_nft(&mut app, &nft, &module, CREATOR_ADDR, "1")?;
+    mint_and_stake_nft(&mut app, &nft, &module, CREATOR_ADDR, "2")?;
+    mint_and_stake_nft(&mut app, &nft, &module, CREATOR_ADDR, "3")?;
+    mint_and_stake_nft(&mut app, &nft, &module, CREATOR_ADDR, "4")?;
+    mint_and_stake_nft(&mut app, &nft, &module, CREATOR_ADDR, "5")?;
+
+    let claims = query_claims(&app, &module, CREATOR_ADDR)?;
+    assert_eq!(claims.nft_claims, vec![]);
+
+    let res = claim_legacy_nfts(&mut app, &module, CREATOR_ADDR);
+    is_error!(res => "Nothing to claim");
+    let res = claim_nfts(&mut app, &module, CREATOR_ADDR);
+    is_error!(res => "Nothing to claim");
+
+    // insert legacy claims manually
+
+    // taken from cw-multi-test's WasmKeeper::contract_storage in wasm.rs
+    let mut module_namespace = b"contract_data/".to_vec();
+    module_namespace.extend_from_slice(module.as_bytes());
+    let prefix = to_length_prefixed_nested(&[b"wasm", &module_namespace]);
+    let key = Map::<&Addr, Vec<NftClaim>>::new("nft_claims").key(&Addr::unchecked(CREATOR_ADDR));
+    let mut legacy_nft_claims_key = prefix;
+    legacy_nft_claims_key.extend_from_slice(&key);
+
+    let block = app.block_info();
+    app.storage_mut().set(
+        &legacy_nft_claims_key,
+        &to_json_vec(&vec![cw721_controllers_v250::NftClaim {
+            token_id: "4".to_string(),
+            release_at: Duration::Height(1).after(&block),
+        }])
+        .unwrap(),
+    );
+
+    let claims = query_claims(&app, &module, CREATOR_ADDR)?;
+    assert_eq!(
+        claims.nft_claims,
+        vec![NftClaim {
+            token_id: "4".to_string(),
+            release_at: cw_utils::Expiration::AtHeight(app.block_info().height + 1)
+        }]
+    );
+
+    // claim now exists, but is not yet expired. Nothing to claim.
+    let res = claim_legacy_nfts(&mut app, &module, CREATOR_ADDR);
+    is_error!(res => "Nothing to claim");
+    let res = claim_nfts(&mut app, &module, CREATOR_ADDR);
+    is_error!(res => "Nothing to claim");
+
+    app.update_block(next_block);
+
+    // no non-legacy claims
+    let res = claim_nfts(&mut app, &module, CREATOR_ADDR);
+    is_error!(res => "Nothing to claim");
+
+    // legacy claim works
+    claim_legacy_nfts(&mut app, &module, CREATOR_ADDR).unwrap();
+    let owner = query_nft_owner(&app, &nft, "4")?;
+    assert_eq!(owner.owner, CREATOR_ADDR.to_string());
+
+    // unstake non-legacy
+    unstake_nfts(&mut app, &module, CREATOR_ADDR, &["2"])?;
+
+    let claims = query_claims(&app, &module, CREATOR_ADDR)?;
+    assert_eq!(
+        claims.nft_claims,
+        vec![NftClaim {
+            token_id: "2".to_string(),
+            release_at: cw_utils::Expiration::AtHeight(app.block_info().height + 1)
+        }]
+    );
+
+    // Claim now exists, but is not yet expired. Nothing to claim.
+    let res = claim_legacy_nfts(&mut app, &module, CREATOR_ADDR);
+    is_error!(res => "Nothing to claim");
+    let res = claim_nfts(&mut app, &module, CREATOR_ADDR);
+    is_error!(res => "Nothing to claim");
+
+    app.update_block(next_block);
+
+    // no legacy claims
+    let res = claim_legacy_nfts(&mut app, &module, CREATOR_ADDR);
+    is_error!(res => "Nothing to claim");
+
+    claim_nfts(&mut app, &module, CREATOR_ADDR)?;
+
+    let owner = query_nft_owner(&app, &nft, "2")?;
+    assert_eq!(owner.owner, CREATOR_ADDR.to_string());
+
+    // unstake another non-legacy
+    unstake_nfts(&mut app, &module, CREATOR_ADDR, &["3"])?;
+
+    let claims = query_claims(&app, &module, CREATOR_ADDR)?;
+    assert_eq!(
+        claims.nft_claims,
+        vec![NftClaim {
+            token_id: "3".to_string(),
+            release_at: cw_utils::Expiration::AtHeight(app.block_info().height + 1)
+        }]
+    );
+
+    app.update_block(next_block);
+
+    claim_specific_nfts(&mut app, &module, CREATOR_ADDR, &["3".to_string()])?;
+    let owner = query_nft_owner(&app, &nft, "3")?;
+    assert_eq!(owner.owner, CREATOR_ADDR.to_string());
+
+    // unstake legacy
+    let block = app.block_info();
+    app.storage_mut().set(
+        &legacy_nft_claims_key,
+        &to_json_vec(&vec![cw721_controllers_v250::NftClaim {
+            token_id: "5".to_string(),
+            release_at: Duration::Height(1).after(&block),
+        }])
+        .unwrap(),
+    );
+    // unstake non-legacy
+    unstake_nfts(&mut app, &module, CREATOR_ADDR, &["1"])?;
+
+    let claims = query_claims(&app, &module, CREATOR_ADDR)?;
+    assert_eq!(
+        claims.nft_claims,
+        vec![
+            NftClaim {
+                token_id: "5".to_string(),
+                release_at: cw_utils::Expiration::AtHeight(app.block_info().height + 1)
+            },
+            NftClaim {
+                token_id: "1".to_string(),
+                release_at: cw_utils::Expiration::AtHeight(app.block_info().height + 1)
+            }
+        ]
+    );
+
+    app.update_block(next_block);
+
+    // both claims should be ready to claim
+    claim_legacy_nfts(&mut app, &module, CREATOR_ADDR)?;
+    claim_nfts(&mut app, &module, CREATOR_ADDR)?;
+
+    let owner = query_nft_owner(&app, &nft, "1")?;
+    assert_eq!(owner.owner, CREATOR_ADDR.to_string());
+    let owner = query_nft_owner(&app, &nft, "5")?;
+    assert_eq!(owner.owner, CREATOR_ADDR.to_string());
+
+    // no claims left
+    let claims = query_claims(&app, &module, CREATOR_ADDR)?;
+    assert_eq!(claims.nft_claims, vec![]);
 
     Ok(())
 }
