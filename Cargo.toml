@@ -18,7 +18,7 @@ resolver = "2"
 edition = "2021"
 license = "BSD-3-Clause"
 repository = "https://github.com/DA0-DA0/dao-contracts"
-version = "2.5.1"
+version = "2.6.0"
 
 [profile.release]
 codegen-units = 1
@@ -85,52 +85,52 @@ wynd-utils = "0.4"
 # optional owner.
 cw-ownable = "0.5"
 
-btsg-ft-factory = { path = "./contracts/external/btsg-ft-factory", version = "2.5.1" }
-cw-admin-factory = { path = "./contracts/external/cw-admin-factory", version = "2.5.1" }
-cw-denom = { path = "./packages/cw-denom", version = "2.5.1" }
-cw-fund-distributor = { path = "./contracts/distribution/cw-fund-distributor", version = "2.5.1" }
-cw-hooks = { path = "./packages/cw-hooks", version = "2.5.1" }
-cw-paginate-storage = { path = "./packages/cw-paginate-storage", version = "2.5.1" }
-cw-payroll-factory = { path = "./contracts/external/cw-payroll-factory", version = "2.5.1" }
-cw-stake-tracker = { path = "./packages/cw-stake-tracker", version = "2.5.1" }
-cw-token-swap = { path = "./contracts/external/cw-token-swap", version = "2.5.1" }
-cw-tokenfactory-issuer = { path = "./contracts/external/cw-tokenfactory-issuer", version = "2.5.1", default-features = false }
-cw-tokenfactory-types = { path = "./packages/cw-tokenfactory-types", version = "2.5.1", default-features = false }
-cw-vesting = { path = "./contracts/external/cw-vesting", version = "2.5.1" }
-cw-wormhole = { path = "./packages/cw-wormhole", version = "2.5.1" }
-cw20-stake = { path = "./contracts/staking/cw20-stake", version = "2.5.1" }
-cw20-stake-external-rewards = { path = "./contracts/staking/cw20-stake-external-rewards", version = "2.5.1" }
-cw20-stake-reward-distributor = { path = "./contracts/staking/cw20-stake-reward-distributor", version = "2.5.1" }
-cw721-controllers = { path = "./packages/cw721-controllers", version = "2.5.1" }
-cw721-roles = { path = "./contracts/external/cw721-roles", version = "2.5.1" }
-dao-cw721-extensions = { path = "./packages/dao-cw721-extensions", version = "2.5.1" }
-dao-dao-core = { path = "./contracts/dao-dao-core", version = "2.5.1" }
-dao-dao-macros = { path = "./packages/dao-dao-macros", version = "2.5.1" }
-dao-hooks = { path = "./packages/dao-hooks", version = "2.5.1" }
-dao-interface = { path = "./packages/dao-interface", version = "2.5.1" }
-dao-pre-propose-approval-multiple = { path = "./contracts/pre-propose/dao-pre-propose-approval-multiple", version = "2.5.1" }
-dao-migrator = { path = "./contracts/external/dao-migrator", version = "2.5.1" }
-dao-pre-propose-approval-single = { path = "./contracts/pre-propose/dao-pre-propose-approval-single", version = "2.5.1" }
-dao-pre-propose-approver = { path = "./contracts/pre-propose/dao-pre-propose-approver", version = "2.5.1" }
-dao-pre-propose-base = { path = "./packages/dao-pre-propose-base", version = "2.5.1" }
-dao-pre-propose-multiple = { path = "./contracts/pre-propose/dao-pre-propose-multiple", version = "2.5.1" }
-dao-pre-propose-single = { path = "./contracts/pre-propose/dao-pre-propose-single", version = "2.5.1" }
-dao-proposal-condorcet = { path = "./contracts/proposal/dao-proposal-condorcet", version = "2.5.1" }
-dao-proposal-hook-counter = { path = "./contracts/test/dao-proposal-hook-counter", version = "2.5.1" }
-dao-proposal-multiple = { path = "./contracts/proposal/dao-proposal-multiple", version = "2.5.1" }
-dao-proposal-single = { path = "./contracts/proposal/dao-proposal-single", version = "2.5.1" }
-dao-proposal-sudo = { path = "./contracts/test/dao-proposal-sudo", version = "2.5.1" }
-dao-rewards-distributor = { path = "./contracts/distribution/dao-rewards-distributor", version = "2.5.1" }
-dao-test-custom-factory = { path = "./contracts/test/dao-test-custom-factory", version = "2.5.1" }
-dao-testing = { path = "./packages/dao-testing", version = "2.5.1" }
-dao-voting = { path = "./packages/dao-voting", version = "2.5.1" }
-dao-voting-cw20-balance = { path = "./contracts/test/dao-voting-cw20-balance", version = "2.5.1" }
-dao-voting-cw20-staked = { path = "./contracts/voting/dao-voting-cw20-staked", version = "2.5.1" }
-dao-voting-cw4 = { path = "./contracts/voting/dao-voting-cw4", version = "2.5.1" }
-dao-voting-cw721-roles = { path = "./contracts/voting/dao-voting-cw721-roles", version = "2.5.1" }
-dao-voting-cw721-staked = { path = "./contracts/voting/dao-voting-cw721-staked", version = "2.5.1" }
-dao-voting-onft-staked = { path = "./contracts/voting/dao-voting-onft-staked", version = "2.5.1" }
-dao-voting-token-staked = { path = "./contracts/voting/dao-voting-token-staked", version = "2.5.1" }
+btsg-ft-factory = { path = "./contracts/external/btsg-ft-factory", version = "2.6.0" }
+cw-admin-factory = { path = "./contracts/external/cw-admin-factory", version = "2.6.0" }
+cw-denom = { path = "./packages/cw-denom", version = "2.6.0" }
+cw-fund-distributor = { path = "./contracts/distribution/cw-fund-distributor", version = "2.6.0" }
+cw-hooks = { path = "./packages/cw-hooks", version = "2.6.0" }
+cw-paginate-storage = { path = "./packages/cw-paginate-storage", version = "2.6.0" }
+cw-payroll-factory = { path = "./contracts/external/cw-payroll-factory", version = "2.6.0" }
+cw-stake-tracker = { path = "./packages/cw-stake-tracker", version = "2.6.0" }
+cw-token-swap = { path = "./contracts/external/cw-token-swap", version = "2.6.0" }
+cw-tokenfactory-issuer = { path = "./contracts/external/cw-tokenfactory-issuer", version = "2.6.0", default-features = false }
+cw-tokenfactory-types = { path = "./packages/cw-tokenfactory-types", version = "2.6.0", default-features = false }
+cw-vesting = { path = "./contracts/external/cw-vesting", version = "2.6.0" }
+cw-wormhole = { path = "./packages/cw-wormhole", version = "2.6.0" }
+cw20-stake = { path = "./contracts/staking/cw20-stake", version = "2.6.0" }
+cw20-stake-external-rewards = { path = "./contracts/staking/cw20-stake-external-rewards", version = "2.6.0" }
+cw20-stake-reward-distributor = { path = "./contracts/staking/cw20-stake-reward-distributor", version = "2.6.0" }
+cw721-controllers = { path = "./packages/cw721-controllers", version = "2.6.0" }
+cw721-roles = { path = "./contracts/external/cw721-roles", version = "2.6.0" }
+dao-cw721-extensions = { path = "./packages/dao-cw721-extensions", version = "2.6.0" }
+dao-dao-core = { path = "./contracts/dao-dao-core", version = "2.6.0" }
+dao-dao-macros = { path = "./packages/dao-dao-macros", version = "2.6.0" }
+dao-hooks = { path = "./packages/dao-hooks", version = "2.6.0" }
+dao-interface = { path = "./packages/dao-interface", version = "2.6.0" }
+dao-pre-propose-approval-multiple = { path = "./contracts/pre-propose/dao-pre-propose-approval-multiple", version = "2.6.0" }
+dao-migrator = { path = "./contracts/external/dao-migrator", version = "2.6.0" }
+dao-pre-propose-approval-single = { path = "./contracts/pre-propose/dao-pre-propose-approval-single", version = "2.6.0" }
+dao-pre-propose-approver = { path = "./contracts/pre-propose/dao-pre-propose-approver", version = "2.6.0" }
+dao-pre-propose-base = { path = "./packages/dao-pre-propose-base", version = "2.6.0" }
+dao-pre-propose-multiple = { path = "./contracts/pre-propose/dao-pre-propose-multiple", version = "2.6.0" }
+dao-pre-propose-single = { path = "./contracts/pre-propose/dao-pre-propose-single", version = "2.6.0" }
+dao-proposal-condorcet = { path = "./contracts/proposal/dao-proposal-condorcet", version = "2.6.0" }
+dao-proposal-hook-counter = { path = "./contracts/test/dao-proposal-hook-counter", version = "2.6.0" }
+dao-proposal-multiple = { path = "./contracts/proposal/dao-proposal-multiple", version = "2.6.0" }
+dao-proposal-single = { path = "./contracts/proposal/dao-proposal-single", version = "2.6.0" }
+dao-proposal-sudo = { path = "./contracts/test/dao-proposal-sudo", version = "2.6.0" }
+dao-rewards-distributor = { path = "./contracts/distribution/dao-rewards-distributor", version = "2.6.0" }
+dao-test-custom-factory = { path = "./contracts/test/dao-test-custom-factory", version = "2.6.0" }
+dao-testing = { path = "./packages/dao-testing", version = "2.6.0" }
+dao-voting = { path = "./packages/dao-voting", version = "2.6.0" }
+dao-voting-cw20-balance = { path = "./contracts/test/dao-voting-cw20-balance", version = "2.6.0" }
+dao-voting-cw20-staked = { path = "./contracts/voting/dao-voting-cw20-staked", version = "2.6.0" }
+dao-voting-cw4 = { path = "./contracts/voting/dao-voting-cw4", version = "2.6.0" }
+dao-voting-cw721-roles = { path = "./contracts/voting/dao-voting-cw721-roles", version = "2.6.0" }
+dao-voting-cw721-staked = { path = "./contracts/voting/dao-voting-cw721-staked", version = "2.6.0" }
+dao-voting-onft-staked = { path = "./contracts/voting/dao-voting-onft-staked", version = "2.6.0" }
+dao-voting-token-staked = { path = "./contracts/voting/dao-voting-token-staked", version = "2.6.0" }
 
 # v1 dependencies. used for state migrations.
 cw-core-v1 = { package = "cw-core", version = "0.1.0" }

@@ -1,6 +1,6 @@
 {
   "contract_name": "dao-voting-cw721-staked",
-  "contract_version": "2.5.1",
+  "contract_version": "2.6.0",
   "idl_version": "1.0.0",
   "instantiate": {
     "$schema": "http://json-schema.org/draft-07/schema#",
