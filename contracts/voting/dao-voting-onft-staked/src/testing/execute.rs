@@ -198,7 +198,9 @@ pub fn claim_nfts(app: &mut OmniflixApp, module: &Addr, sender: &str) -> AnyResu
     app.execute_contract(
         addr!(sender),
         module.clone(),
-        &ExecuteMsg::ClaimNfts {},
+        &ExecuteMsg::ClaimNfts {
+            token_ids: Some(vec![]),
+        },
         &[],
     )
 }

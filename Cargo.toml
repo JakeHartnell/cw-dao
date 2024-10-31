@@ -159,3 +159,6 @@ dao-proposal-multiple-v241 = { package = "dao-proposal-multiple", version = "=2.
 dao-proposal-single-v241 = { package = "dao-proposal-single", version = "=2.4.1" }
 dao-voting-cw4-v241 = { package = "dao-voting-cw4", version = "=2.4.1" }
 dao-voting-v241 = { package = "dao-voting", version = "=2.4.1" }
+
+# v2.5.0 dependencies.
+cw721-controllers-v250 = { package = "cw721-controllers", version = "=2.5.0" }

@@ -1,4 +1,4 @@
-use cosm_orc::orchestrator::{ExecReq, SigningKey};
+use cosm_orc::orchestrator::SigningKey;
 use cosmwasm_std::{Binary, Empty, Uint128};
 use cw_utils::Duration;
 use test_context::test_context;
@@ -126,7 +126,9 @@ pub fn claim_nfts(chain: &mut Chain, sender: &SigningKey) {
         .execute(
             CONTRACT_NAME,
             "claim_nfts",
-            &module::msg::ExecuteMsg::ClaimNfts {},
+            &module::msg::ExecuteMsg::ClaimNfts {
+                token_ids: Some(vec![]),
+            },
             sender,
             vec![],
         )
@@ -188,80 +190,4 @@ fn cw721_stake_tokens(chain: &mut Chain) {
 
     let voting_power = query_voting_power(chain, &user_addr, None);
     assert_eq!(voting_power, Uint128::zero());
-}
-
-#[test_context(Chain)]
-#[test]
-#[ignore]
-fn cw721_stake_max_claims_works(chain: &mut Chain) {
-    use module::state::MAX_CLAIMS;
-
-    let user_addr = chain.users["user1"].account.address.clone();
-    let user_key = chain.users["user1"].key.clone();
-
-    let CommonTest { module, .. } =
-        setup_test(chain, Some(Duration::Height(1)), &user_key, &user_addr);
-
-    // Create `MAX_CLAIMS` claims.
-
-    // batch_size * 3 = the number of msgs to be batched per tx.
-    // We cant batch all of the msgs under a single tx because we hit MAX_BLOCK_GAS limits.
-    let batch_size = 10;
-    let mut total_msgs = 0;
-
-    let mut reqs = vec![];
-    for i in 0..MAX_CLAIMS {
-        let token_id = i.to_string();
-
-        reqs.push(ExecReq {
-            contract_name: CW721_NAME.to_string(),
-            msg: Box::new(cw721_base::ExecuteMsg::Mint::<Empty, Empty> {
-                token_id: token_id.clone(),
-                owner: user_addr.to_string(),
-                token_uri: None,
-                extension: Empty::default(),
-            }),
-            funds: vec![],
-        });
-
-        reqs.push(ExecReq {
-            contract_name: CW721_NAME.to_string(),
-            msg: Box::new(cw721::Cw721ExecuteMsg::SendNft {
-                contract: module.to_string(),
-                token_id: token_id.clone(),
-                msg: Binary::default(),
-            }),
-            funds: vec![],
-        });
-
-        reqs.push(ExecReq {
-            contract_name: CONTRACT_NAME.to_string(),
-            msg: Box::new(module::msg::ExecuteMsg::Unstake {
-                token_ids: vec![token_id],
-            }),
-            funds: vec![],
-        });
-
-        if (i != 0 && i % batch_size == 0) || i == MAX_CLAIMS - 1 {
-            total_msgs += reqs.len();
-
-            chain
-                .orc
-                .execute_batch("batch_cw721_stake_max_claims", reqs, &user_key)
-                .unwrap();
-
-            reqs = vec![];
-        }
-    }
-
-    assert_eq!(total_msgs as u64, MAX_CLAIMS * 3);
-
-    chain
-        .orc
-        .poll_for_n_blocks(1, core::time::Duration::from_millis(20_000), false)
-        .unwrap();
-
-    // If this works, we're golden. Other tests make sure that the
-    // NFTs get returned as a result of this.
-    claim_nfts(chain, &user_key);
 }

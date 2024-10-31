@@ -22,7 +22,6 @@ dao-cw721-extensions = { workspace = true }
 dao-dao-macros = { workspace = true }
 dao-interface = { workspace = true }
 cw721-base = { workspace = true, features = ["library"] }
-cw721-controllers = { workspace = true }
 cw-ownable = { workspace = true }
 cw721 = { workspace = true }
 cw-utils = { workspace = true }

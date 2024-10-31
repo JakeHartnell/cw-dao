@@ -13,7 +13,6 @@ use dao_voting::threshold::{ActiveThreshold, ActiveThresholdResponse};
 use crate::{
     contract::{migrate, CONTRACT_NAME, CONTRACT_VERSION},
     msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, NftContract, QueryMsg},
-    state::MAX_CLAIMS,
     testing::{
         execute::{
             claim_nfts, mint_and_stake_nft, mint_nft, stake_nft, unstake_nfts, update_config,
@@ -297,28 +296,6 @@ fn test_claims() -> anyhow::Result<()> {
 
     let owner = query_nft_owner(&app, &nft, "2")?;
     assert_eq!(owner.owner, CREATOR_ADDR.to_string());
-
-    Ok(())
-}
-
-// I can not have more than MAX_CLAIMS claims pending.
-#[test]
-fn test_max_claims() -> anyhow::Result<()> {
-    let CommonTest {
-        mut app,
-        module,
-        nft,
-    } = setup_test(Some(Duration::Height(1)));
-
-    for i in 0..MAX_CLAIMS {
-        let i_str = &i.to_string();
-        mint_and_stake_nft(&mut app, &nft, &module, CREATOR_ADDR, i_str)?;
-        unstake_nfts(&mut app, &module, CREATOR_ADDR, &[i_str])?;
-    }
-
-    mint_and_stake_nft(&mut app, &nft, &module, CREATOR_ADDR, "a")?;
-    let res = unstake_nfts(&mut app, &module, CREATOR_ADDR, &["a"]);
-    is_error!(res => "Too many outstanding claims. Claim some tokens before unstaking more.");
 
     Ok(())
 }

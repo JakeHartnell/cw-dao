@@ -1,14 +1,10 @@
 use cosmwasm_std::Uint128;
 use cw_multi_test::next_block;
-use cw_utils::Duration;
 
-use crate::{
-    state::MAX_CLAIMS,
-    testing::{
-        execute::{stake_nft, unstake_nfts},
-        instantiate::instantiate_cw721_base,
-        queries::query_voting_power,
-    },
+use crate::testing::{
+    execute::{stake_nft, unstake_nfts},
+    instantiate::instantiate_cw721_base,
+    queries::query_voting_power,
 };
 
 use super::{
@@ -143,33 +139,5 @@ fn test_query_the_future() -> anyhow::Result<()> {
     )?;
     assert_eq!(voting.power, Uint128::zero());
 
-    Ok(())
-}
-
-/// I can not unstake more than one NFT in a TX in order to bypass the
-/// MAX_CLAIMS limit.
-#[test]
-fn test_bypass_max_claims() -> anyhow::Result<()> {
-    let CommonTest {
-        mut app,
-        module,
-        nft,
-    } = setup_test(Some(Duration::Height(1)));
-    let mut to_stake = vec![];
-    for i in 1..(MAX_CLAIMS + 10) {
-        let i_str = &i.to_string();
-        mint_and_stake_nft(&mut app, &nft, &module, CREATOR_ADDR, i_str)?;
-        if i < MAX_CLAIMS {
-            // unstake MAX_CLAMS - 1 NFTs
-            unstake_nfts(&mut app, &module, CREATOR_ADDR, &[i_str])?;
-        } else {
-            // push rest of NFT ids to vec
-            to_stake.push(i_str.clone());
-        }
-    }
-    let binding = to_stake.iter().map(|s| s.as_str()).collect::<Vec<_>>();
-    let to_stake_slice: &[&str] = binding.as_slice();
-    let res = unstake_nfts(&mut app, &module, CREATOR_ADDR, to_stake_slice);
-    is_error!(res => "Too many outstanding claims. Claim some tokens before unstaking more.");
     Ok(())
 }

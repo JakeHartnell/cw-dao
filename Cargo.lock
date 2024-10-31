@@ -1623,6 +1623,19 @@ dependencies = [
 
 [[package]]
 name = "cw721-controllers"
+version = "2.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e8e48a8280ab1863169ce8caa395c72e7cbb0a4638323ddafbd3777da002fa89"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus 1.2.0",
+ "cw-utils 1.0.3",
+ "thiserror",
+]
+
+[[package]]
+name = "cw721-controllers"
 version = "2.5.1"
 dependencies = [
  "cosmwasm-schema",
@@ -2499,7 +2512,6 @@ dependencies = [
  "cw4 1.1.2",
  "cw721 0.18.0",
  "cw721-base 0.18.0",
- "cw721-controllers",
  "cw721-roles",
  "dao-cw721-extensions",
  "dao-dao-macros 2.5.1",
@@ -2523,7 +2535,8 @@ dependencies = [
  "cw2 1.1.2",
  "cw721 0.18.0",
  "cw721-base 0.18.0",
- "cw721-controllers",
+ "cw721-controllers 2.5.0",
+ "cw721-controllers 2.5.1",
  "dao-dao-macros 2.5.1",
  "dao-hooks 2.5.1",
  "dao-interface 2.5.1",
@@ -2551,7 +2564,8 @@ dependencies = [
  "cw-storage-plus 1.2.0",
  "cw-utils 1.0.3",
  "cw2 1.1.2",
- "cw721-controllers",
+ "cw721-controllers 2.5.0",
+ "cw721-controllers 2.5.1",
  "dao-dao-macros 2.5.1",
  "dao-hooks 2.5.1",
  "dao-interface 2.5.1",

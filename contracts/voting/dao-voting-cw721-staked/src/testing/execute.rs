@@ -110,7 +110,9 @@ pub fn claim_nfts(app: &mut App, module: &Addr, sender: &str) -> AnyResult<AppRe
     app.execute_contract(
         addr!(sender),
         module.clone(),
-        &ExecuteMsg::ClaimNfts {},
+        &ExecuteMsg::ClaimNfts {
+            token_ids: Some(vec![]),
+        },
         &[],
     )
 }

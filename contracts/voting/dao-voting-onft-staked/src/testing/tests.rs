@@ -13,7 +13,6 @@ use crate::testing::DAO;
 use crate::{
     contract::{migrate, CONTRACT_NAME, CONTRACT_VERSION},
     msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
-    state::MAX_CLAIMS,
     testing::{
         execute::{
             claim_nfts, mint_and_stake_nft, mint_nft, stake_nft, unstake_nfts, update_config,
@@ -290,29 +289,6 @@ fn test_claims() -> anyhow::Result<()> {
 
     let owner = query_nft_owner(&app, &nft, "2")?;
     assert_eq!(owner, STAKER.to_string());
-
-    Ok(())
-}
-
-// I can not have more than MAX_CLAIMS claims pending.
-#[test]
-fn test_max_claims() -> anyhow::Result<()> {
-    let CommonTest {
-        mut app,
-        module,
-        nft,
-        ..
-    } = setup_test(Some(Duration::Height(1)), None);
-
-    for i in 0..MAX_CLAIMS {
-        let i_str = &i.to_string();
-        mint_and_stake_nft(&mut app, &nft, &module, STAKER, i_str)?;
-        unstake_nfts(&mut app, &module, STAKER, &[i_str])?;
-    }
-
-    mint_and_stake_nft(&mut app, &nft, &module, STAKER, "a")?;
-    let res = unstake_nfts(&mut app, &module, STAKER, &["a"]);
-    is_error!(res => "Too many outstanding claims. Claim some tokens before unstaking more.");
 
     Ok(())
 }
@@ -984,35 +960,6 @@ fn test_query_the_future() -> anyhow::Result<()> {
     let voting = query_voting_power(&app, &module, STAKER, Some(app.block_info().height + 100))?;
     assert_eq!(voting.power, Uint128::zero());
 
-    Ok(())
-}
-
-/// I can not unstake more than one NFT in a TX in order to bypass the
-/// MAX_CLAIMS limit.
-#[test]
-fn test_bypass_max_claims() -> anyhow::Result<()> {
-    let CommonTest {
-        mut app,
-        module,
-        nft,
-        ..
-    } = setup_test(Some(Duration::Height(1)), None);
-    let mut to_stake = vec![];
-    for i in 1..(MAX_CLAIMS + 10) {
-        let i_str = &i.to_string();
-        mint_and_stake_nft(&mut app, &nft, &module, STAKER, i_str)?;
-        if i < MAX_CLAIMS {
-            // unstake MAX_CLAMS - 1 NFTs
-            unstake_nfts(&mut app, &module, STAKER, &[i_str])?;
-        } else {
-            // push rest of NFT ids to vec
-            to_stake.push(i_str.clone());
-        }
-    }
-    let binding = to_stake.iter().map(|s| s.as_str()).collect::<Vec<_>>();
-    let to_stake_slice: &[&str] = binding.as_slice();
-    let res = unstake_nfts(&mut app, &module, STAKER, to_stake_slice);
-    is_error!(res => "Too many outstanding claims. Claim some tokens before unstaking more.");
     Ok(())
 }
 

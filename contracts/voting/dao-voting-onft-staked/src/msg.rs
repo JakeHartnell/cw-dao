@@ -75,8 +75,11 @@ pub enum ExecuteMsg {
     /// Unstakes the specified token_ids on behalf of the sender. token_ids must
     /// have unique values and have non-zero length.
     Unstake { token_ids: Vec<String> },
-    /// Claim NFTs that have been unstaked for the specified duration.
-    ClaimNfts {},
+    /// Claim NFTs that have been unstaked for the specified duration. If none
+    /// are provided, it attempts to claim all legacy claims. If token IDs are
+    /// provided, only those are claimed. If an empty vector is provided, it
+    /// attempts to claim all non-legacy claims.
+    ClaimNfts { token_ids: Option<Vec<String>> },
     /// Updates the contract configuration, namely unstaking duration. Only
     /// callable by the DAO that initialized this voting contract.
     UpdateConfig { duration: Option<Duration> },
@@ -101,7 +104,11 @@ pub enum QueryMsg {
     #[returns(crate::state::Config)]
     Config {},
     #[returns(::cw721_controllers::NftClaimsResponse)]
-    NftClaims { address: String },
+    NftClaims {
+        address: String,
+        start_after: Option<String>,
+        limit: Option<u32>,
+    },
     #[returns(::cw_controllers::HooksResponse)]
     Hooks {},
     // List the staked NFTs for a given address.

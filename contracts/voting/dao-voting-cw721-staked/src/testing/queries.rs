@@ -18,6 +18,8 @@ pub fn query_claims(app: &App, module: &Addr, addr: &str) -> StdResult<NftClaims
         module,
         &QueryMsg::NftClaims {
             address: addr.to_string(),
+            start_after: None,
+            limit: None,
         },
     )?;
     Ok(claims)

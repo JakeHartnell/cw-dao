@@ -265,7 +265,7 @@
         "additionalProperties": false
       },
       {
-        "description": "Claim NFTs that have been unstaked for the specified duration.",
+        "description": "Claim NFTs that have been unstaked for the specified duration. If none are provided, it attempts to claim all legacy claims. If token IDs are provided, only those are claimed. If an empty vector is provided, it attempts to claim all non-legacy claims.",
         "type": "object",
         "required": [
           "claim_nfts"
@@ -273,6 +273,17 @@
         "properties": {
           "claim_nfts": {
             "type": "object",
+            "properties": {
+              "token_ids": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
             "additionalProperties": false
           }
         },
@@ -525,6 +536,20 @@
             "properties": {
               "address": {
                 "type": "string"
+              },
+              "limit": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint32",
+                "minimum": 0.0
+              },
+              "start_after": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             },
             "additionalProperties": false

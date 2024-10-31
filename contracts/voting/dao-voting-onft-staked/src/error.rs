@@ -16,6 +16,9 @@ pub enum ContractError {
     #[error(transparent)]
     UnstakingDurationError(#[from] dao_voting::duration::UnstakingDurationError),
 
+    #[error(transparent)]
+    NftClaimError(#[from] cw721_controllers::NftClaimError),
+
     #[error("Nothing to claim")]
     NothingToClaim {},
 
@@ -33,9 +36,6 @@ pub enum ContractError {
 
     #[error("Can not unstake that which you have not staked (unstaking {token_id})")]
     NotStaked { token_id: String },
-
-    #[error("Too many outstanding claims. Claim some tokens before unstaking more.")]
-    TooManyClaims {},
 
     #[error("Unauthorized")]
     Unauthorized {},
