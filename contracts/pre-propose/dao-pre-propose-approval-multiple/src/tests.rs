@@ -1257,10 +1257,10 @@ fn test_approval_and_rejection_permissions() {
         &coins(10, "ujuno"),
     );
 
-    // Only approver can propose
+    // Only approver can approve
     let err: PreProposeError = app
         .execute_contract(
-            Addr::unchecked("nonmember"),
+            Addr::unchecked("nonapprover"),
             pre_propose.clone(),
             &ExecuteMsg::Extension {
                 msg: ExecuteExt::Approve { id: pre_propose_id },
@@ -1272,11 +1272,11 @@ fn test_approval_and_rejection_permissions() {
         .unwrap();
     assert_eq!(err, PreProposeError::Unauthorized {});
 
-    // Only approver can propose
+    // Only approver can reject
     let err: PreProposeError = app
         .execute_contract(
-            Addr::unchecked("nonmember"),
-            pre_propose,
+            Addr::unchecked("nonapprover"),
+            pre_propose.clone(),
             &ExecuteMsg::Extension {
                 msg: ExecuteExt::Reject { id: pre_propose_id },
             },
@@ -1286,6 +1286,94 @@ fn test_approval_and_rejection_permissions() {
         .downcast()
         .unwrap();
     assert_eq!(err, PreProposeError::Unauthorized {});
+
+    // Updating approver after proposal created does not change old proposal's
+    // approver
+    app.execute_contract(
+        Addr::unchecked("approver"),
+        pre_propose.clone(),
+        &ExecuteMsg::Extension {
+            msg: ExecuteExt::UpdateApprover {
+                address: "newapprover".to_string(),
+            },
+        },
+        &[],
+    )
+    .unwrap();
+
+    let err: PreProposeError = app
+        .execute_contract(
+            Addr::unchecked("newapprover"),
+            pre_propose.clone(),
+            &ExecuteMsg::Extension {
+                msg: ExecuteExt::Approve { id: pre_propose_id },
+            },
+            &[],
+        )
+        .unwrap_err()
+        .downcast()
+        .unwrap();
+    assert_eq!(err, PreProposeError::Unauthorized {});
+
+    // Old approver can still approve.
+    app.execute_contract(
+        Addr::unchecked("approver"),
+        pre_propose.clone(),
+        &ExecuteMsg::Extension {
+            msg: ExecuteExt::Approve { id: pre_propose_id },
+        },
+        &[],
+    )
+    .unwrap();
+
+    // Non-member proposes.
+    mint_natives(&mut app, "nonmember", coins(10, "ujuno"));
+    let pre_propose_id = make_pre_proposal(
+        &mut app,
+        pre_propose.clone(),
+        "nonmember",
+        &coins(10, "ujuno"),
+    );
+
+    // Old approver cannot approve nor reject.
+    let err: PreProposeError = app
+        .execute_contract(
+            Addr::unchecked("approver"),
+            pre_propose.clone(),
+            &ExecuteMsg::Extension {
+                msg: ExecuteExt::Approve { id: pre_propose_id },
+            },
+            &[],
+        )
+        .unwrap_err()
+        .downcast()
+        .unwrap();
+    assert_eq!(err, PreProposeError::Unauthorized {});
+
+    let err: PreProposeError = app
+        .execute_contract(
+            Addr::unchecked("approver"),
+            pre_propose.clone(),
+            &ExecuteMsg::Extension {
+                msg: ExecuteExt::Reject { id: pre_propose_id },
+            },
+            &[],
+        )
+        .unwrap_err()
+        .downcast()
+        .unwrap();
+    assert_eq!(err, PreProposeError::Unauthorized {});
+
+    // New approver can now approve.
+    app.execute_contract(
+        Addr::unchecked("newapprover"),
+        pre_propose.clone(),
+        &ExecuteMsg::Extension {
+            msg: ExecuteExt::Approve { id: pre_propose_id },
+        },
+        &[],
+    )
+    .unwrap();
 }
 
 #[test]

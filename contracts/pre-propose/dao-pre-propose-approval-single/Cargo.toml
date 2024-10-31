@@ -1,6 +1,9 @@
 [package]
 name = "dao-pre-propose-approval-single"
-authors = ["ekez <ekez@withoutdoing.com>", "Jake Hartnell <no-reply@no-reply.com>"]
+authors = [
+  "ekez <ekez@withoutdoing.com>",
+  "Jake Hartnell <no-reply@no-reply.com>",
+]
 description = "A DAO DAO pre-propose module handling a proposal approval flow for for dao-proposal-single."
 edition = { workspace = true }
 license = { workspace = true }
@@ -21,6 +24,7 @@ cosmwasm-std = { workspace = true }
 cosmwasm-schema = { workspace = true }
 cw-storage-plus = { workspace = true }
 cw2 = { workspace = true }
+cw-denom = { workspace = true }
 cw-paginate-storage = { workspace = true }
 dao-pre-propose-base = { workspace = true }
 dao-voting = { workspace = true }
@@ -28,7 +32,6 @@ thiserror = { workspace = true }
 dao-interface = { workspace = true }
 
 [dev-dependencies]
-cw-denom = { workspace = true }
 cw-multi-test = { workspace = true }
 cw-utils = { workspace = true }
 cw4 = { workspace = true }
@@ -47,6 +50,6 @@ dao-proposal-single = { workspace = true }
 dao-dao-core-v241 = { workspace = true }
 dao-interface-v241 = { workspace = true }
 dao-pre-propose-approval-single-v241 = { workspace = true }
-dao-proposal-single-v241  = { workspace = true }
+dao-proposal-single-v241 = { workspace = true }
 dao-voting-cw4-v241 = { workspace = true }
 dao-voting-v241 = { workspace = true }

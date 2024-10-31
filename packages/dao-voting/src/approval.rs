@@ -37,10 +37,12 @@ pub enum ApprovalProposalStatus {
 
 #[cw_serde]
 pub struct ApprovalProposal<ProposeMsg> {
-    /// The status of a completed proposal.
+    /// The status of an approval proposal.
     pub status: ApprovalProposalStatus,
     /// The approval ID used to identify this pending proposal.
     pub approval_id: u64,
+    /// The address that can approve/reject this proposal.
+    pub approver: Addr,
     /// The address that created the proposal.
     pub proposer: Addr,
     /// The propose message that ought to be executed on the proposal

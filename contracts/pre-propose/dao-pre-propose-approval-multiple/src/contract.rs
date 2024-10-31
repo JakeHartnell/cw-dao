@@ -125,6 +125,8 @@ pub fn execute_propose(
                 Ok(SubMsg::new(execute_msg))
             })?;
 
+    let approver = APPROVER.load(deps.storage)?;
+
     // Save the proposal and its information as pending.
     PENDING_PROPOSALS.save(
         deps.storage,
@@ -132,6 +134,7 @@ pub fn execute_propose(
         &Proposal {
             status: ApprovalProposalStatus::Pending {},
             approval_id,
+            approver: approver.clone(),
             proposer: info.sender,
             msg: propose_msg_internal,
             deposit: config.deposit_info,
@@ -142,7 +145,8 @@ pub fn execute_propose(
         .add_messages(deposit_messages)
         .add_submessages(hooks_msgs)
         .add_attribute("method", "pre-propose")
-        .add_attribute("id", approval_id.to_string()))
+        .add_attribute("id", approval_id.to_string())
+        .add_attribute("approver", approver.to_string()))
 }
 
 pub fn execute_approve(
@@ -150,16 +154,15 @@ pub fn execute_approve(
     info: MessageInfo,
     id: u64,
 ) -> Result<Response, PreProposeError> {
-    // Check sender is the approver
-    let approver = APPROVER.load(deps.storage)?;
-    if approver != info.sender {
-        return Err(PreProposeError::Unauthorized {});
-    }
-
     // Load proposal and send propose message to the proposal module
     let proposal = PENDING_PROPOSALS.may_load(deps.storage, id)?;
     match proposal {
         Some(proposal) => {
+            // Check sender is the approver
+            if proposal.approver != info.sender {
+                return Err(PreProposeError::Unauthorized {});
+            }
+
             let proposal_module = PrePropose::default().proposal_module.load(deps.storage)?;
 
             // Snapshot the deposit for the proposal that we're about
@@ -188,6 +191,7 @@ pub fn execute_approve(
                         created_proposal_id: proposal_id,
                     },
                     approval_id: proposal.approval_id,
+                    approver: proposal.approver,
                     proposer: proposal.proposer,
                     msg: proposal.msg,
                     deposit: proposal.deposit,
@@ -211,14 +215,9 @@ pub fn execute_reject(
     info: MessageInfo,
     id: u64,
 ) -> Result<Response, PreProposeError> {
-    // Check sender is the approver
-    let approver = APPROVER.load(deps.storage)?;
-    if approver != info.sender {
-        return Err(PreProposeError::Unauthorized {});
-    }
-
     let Proposal {
         approval_id,
+        approver,
         proposer,
         msg,
         deposit,
@@ -227,12 +226,18 @@ pub fn execute_reject(
         .may_load(deps.storage, id)?
         .ok_or(PreProposeError::ProposalNotFound {})?;
 
+    // Check sender is the approver
+    if approver != info.sender {
+        return Err(PreProposeError::Unauthorized {});
+    }
+
     COMPLETED_PROPOSALS.save(
         deps.storage,
         id,
         &Proposal {
             status: ApprovalProposalStatus::Rejected {},
             approval_id,
+            approver,
             proposer: proposer.clone(),
             msg: msg.clone(),
             deposit: deposit.clone(),
