@@ -12,8 +12,8 @@ pub enum NftClaimError {
     #[error("NFT claim not found for {token_id}")]
     NotFound { token_id: String },
 
-    #[error("One or more NFTs is not ready to be claimed")]
-    NotReady {},
+    #[error("NFT with ID {token_id} is not ready to be claimed")]
+    NotReady { token_id: String },
 }
 
 #[cw_serde]
@@ -80,12 +80,15 @@ impl<'a> NftClaims<'a> {
             .map(|token_id| -> Result<(), NftClaimError> {
                 match self.0.may_load(storage, (addr, token_id)) {
                     Ok(Some(expiration)) => {
-                        // if claim is expired, continue
+                        // if claim is expired, remove it and continue
                         if expiration.is_expired(block) {
+                            self.0.remove(storage, (addr, token_id));
                             Ok(())
                         } else {
                             // if claim is not expired, error
-                            Err(NftClaimError::NotReady {})
+                            Err(NftClaimError::NotReady {
+                                token_id: token_id.to_string(),
+                            })
                         }
                     }
                     // if claim is not found, error
@@ -95,14 +98,8 @@ impl<'a> NftClaims<'a> {
                     Err(e) => Err(e.into()),
                 }
             })
-            .collect::<Result<Vec<_>, NftClaimError>>()?;
-
-        // remove all now that we've confirmed they're mature
-        token_ids
-            .iter()
-            .for_each(|token_id| self.0.remove(storage, (addr, token_id)));
-
-        Ok(())
+            .collect::<Result<Vec<_>, NftClaimError>>()
+            .map(|_| ())
     }
 
     pub fn query_claims<Q: CustomQuery>(
@@ -120,7 +117,12 @@ impl<'a> NftClaims<'a> {
             .prefix(address)
             .range(deps.storage, start, None, Order::Ascending)
             .take(limit)
-            .map(|item| item.map(|(token_id, v)| NftClaim::new(token_id, v)))
+            .map(|item| {
+                item.map(|(token_id, release_at)| NftClaim {
+                    token_id,
+                    release_at,
+                })
+            })
             .collect::<StdResult<Vec<_>>>()?;
 
         Ok(NftClaimsResponse { nft_claims })
@@ -314,7 +316,12 @@ mod test {
                 &env.block,
             )
             .unwrap_err();
-        assert_eq!(error, NftClaimError::NotReady {});
+        assert_eq!(
+            error,
+            NftClaimError::NotReady {
+                token_id: TEST_CRYPTO_PUNKS_TOKEN_ID.to_string()
+            }
+        );
 
         let saved_claims = claims
             .0

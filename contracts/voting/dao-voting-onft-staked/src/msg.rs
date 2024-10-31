@@ -75,11 +75,8 @@ pub enum ExecuteMsg {
     /// Unstakes the specified token_ids on behalf of the sender. token_ids must
     /// have unique values and have non-zero length.
     Unstake { token_ids: Vec<String> },
-    /// Claim NFTs that have been unstaked for the specified duration. If none
-    /// are provided, it attempts to claim all legacy claims. If token IDs are
-    /// provided, only those are claimed. If an empty vector is provided, it
-    /// attempts to claim all non-legacy claims.
-    ClaimNfts { token_ids: Option<Vec<String>> },
+    /// Claim NFTs that have been unstaked for the specified duration.
+    ClaimNfts { r#type: ClaimType },
     /// Updates the contract configuration, namely unstaking duration. Only
     /// callable by the DAO that initialized this voting contract.
     UpdateConfig { duration: Option<Duration> },
@@ -94,6 +91,16 @@ pub enum ExecuteMsg {
     UpdateActiveThreshold {
         new_threshold: Option<ActiveThreshold>,
     },
+}
+
+#[cw_serde]
+pub enum ClaimType {
+    /// Claims all legacy claims.
+    Legacy,
+    /// Claims all non-legacy claims.
+    All,
+    /// Claims specific non-legacy NFTs.
+    Specific(Vec<String>),
 }
 
 #[active_query]

@@ -265,7 +265,7 @@
         "additionalProperties": false
       },
       {
-        "description": "Claim NFTs that have been unstaked for the specified duration. If none are provided, it attempts to claim all legacy claims. If token IDs are provided, only those are claimed. If an empty vector is provided, it attempts to claim all non-legacy claims.",
+        "description": "Claim NFTs that have been unstaked for the specified duration.",
         "type": "object",
         "required": [
           "claim_nfts"
@@ -273,15 +273,12 @@
         "properties": {
           "claim_nfts": {
             "type": "object",
+            "required": [
+              "type"
+            ],
             "properties": {
-              "token_ids": {
-                "type": [
-                  "array",
-                  "null"
-                ],
-                "items": {
-                  "type": "string"
-                }
+              "type": {
+                "$ref": "#/definitions/ClaimType"
               }
             },
             "additionalProperties": false
@@ -439,6 +436,40 @@
       "Binary": {
         "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization with serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>. See also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
         "type": "string"
+      },
+      "ClaimType": {
+        "oneOf": [
+          {
+            "description": "Claims all legacy claims.",
+            "type": "string",
+            "enum": [
+              "legacy"
+            ]
+          },
+          {
+            "description": "Claims all non-legacy claims.",
+            "type": "string",
+            "enum": [
+              "all"
+            ]
+          },
+          {
+            "description": "Claims specific non-legacy NFTs.",
+            "type": "object",
+            "required": [
+              "specific"
+            ],
+            "properties": {
+              "specific": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
       },
       "Cw721ReceiveMsg": {
         "description": "Cw721ReceiveMsg should be de/serialized under `Receive()` variant in a ExecuteMsg",
