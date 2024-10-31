@@ -17,3 +17,4 @@ cw20 = { workspace = true }
 [dev-dependencies]
 cw20-base = { workspace = true }
 cw-multi-test = { workspace = true }
+dao-testing = { workspace = true }

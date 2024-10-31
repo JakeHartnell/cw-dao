@@ -4,14 +4,24 @@ use cosmwasm_std::{
 use cw2::ContractVersion;
 use cw20::Cw20Coin;
 use cw_denom::UncheckedDenom;
-use cw_multi_test::{App, BankSudo, Contract, ContractWrapper, Executor};
+use cw_multi_test::{App, BankSudo, Executor};
 use cw_utils::Duration;
 use dao_interface::proposal::InfoResponse;
 use dao_interface::state::ProposalModule;
 use dao_interface::state::{Admin, ModuleInstantiateInfo};
 use dao_pre_propose_base::{error::PreProposeError, msg::DepositInfoResponse, state::Config};
 use dao_proposal_single as dps;
-use dao_testing::{contracts::cw4_group_contract, helpers::instantiate_with_cw4_groups_governance};
+use dao_testing::{
+    contracts::{
+        cw20_base_contract, cw4_group_contract, dao_pre_propose_single_contract,
+        dao_proposal_single_contract,
+        v241::{
+            dao_dao_core_v241_contract, dao_pre_propose_single_v241_contract,
+            dao_proposal_single_v241_contract, dao_voting_cw4_v241_contract,
+        },
+    },
+    helpers::instantiate_with_cw4_groups_governance,
+};
 use dao_voting::pre_propose::{PreProposeSubmissionPolicy, PreProposeSubmissionPolicyError};
 use dao_voting::{
     deposit::{CheckedDepositInfo, DepositRefundPolicy, DepositToken, UncheckedDepositInfo},
@@ -23,7 +33,6 @@ use dao_voting::{
 use dps::query::ProposalResponse;
 
 // test v2.4.1 migration
-use dao_dao_core_v241 as core_v241;
 use dao_interface_v241 as di_v241;
 use dao_pre_propose_single_v241 as dpps_v241;
 use dao_proposal_single_v241 as dps_v241;
@@ -31,31 +40,6 @@ use dao_voting_cw4_v241 as dvcw4_v241;
 use dao_voting_v241 as dv_v241;
 
 use crate::contract::*;
-
-fn dao_proposal_single_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        dps::contract::execute,
-        dps::contract::instantiate,
-        dps::contract::query,
-    )
-    .with_migrate(dps::contract::migrate)
-    .with_reply(dps::contract::reply);
-    Box::new(contract)
-}
-
-fn dao_pre_propose_single_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(execute, instantiate, query).with_migrate(migrate);
-    Box::new(contract)
-}
-
-fn cw20_base_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        cw20_base::contract::execute,
-        cw20_base::contract::instantiate,
-        cw20_base::contract::query,
-    );
-    Box::new(contract)
-}
 
 fn get_default_proposal_module_instantiate(
     app: &mut App,
@@ -2186,41 +2170,11 @@ fn test_hook_management() {
 fn test_migrate_from_v241() {
     let app = &mut App::default();
 
-    let core_v241_contract = Box::new(
-        ContractWrapper::new(
-            core_v241::contract::execute,
-            core_v241::contract::instantiate,
-            core_v241::contract::query,
-        )
-        .with_reply(core_v241::contract::reply),
-    );
-    let dvcw4_v241_contract = Box::new(
-        ContractWrapper::new(
-            dvcw4_v241::contract::execute,
-            dvcw4_v241::contract::instantiate,
-            dvcw4_v241::contract::query,
-        )
-        .with_reply(dvcw4_v241::contract::reply),
-    );
-    let dpps_v241_contract = Box::new(ContractWrapper::new(
-        dpps_v241::contract::execute,
-        dpps_v241::contract::instantiate,
-        dpps_v241::contract::query,
-    ));
-    let dps_v241_contract = Box::new(
-        ContractWrapper::new(
-            dps_v241::contract::execute,
-            dps_v241::contract::instantiate,
-            dps_v241::contract::query,
-        )
-        .with_reply(dps_v241::contract::reply),
-    );
-
-    let core_id = app.store_code(core_v241_contract);
+    let core_id = app.store_code(dao_dao_core_v241_contract());
     let cw4_id = app.store_code(cw4_group_contract());
-    let dvcw4_v241_id = app.store_code(dvcw4_v241_contract);
-    let dpps_v241_id = app.store_code(dpps_v241_contract);
-    let dps_v241_id = app.store_code(dps_v241_contract);
+    let dvcw4_v241_id = app.store_code(dao_voting_cw4_v241_contract());
+    let dpps_v241_id = app.store_code(dao_pre_propose_single_v241_contract());
+    let dps_v241_id = app.store_code(dao_proposal_single_v241_contract());
 
     let governance_instantiate = di_v241::msg::InstantiateMsg {
         dao_uri: None,
@@ -2513,41 +2467,11 @@ fn test_migrate_from_v241() {
 fn test_migrate_from_v241_with_policy_update() {
     let app = &mut App::default();
 
-    let core_v241_contract = Box::new(
-        ContractWrapper::new(
-            core_v241::contract::execute,
-            core_v241::contract::instantiate,
-            core_v241::contract::query,
-        )
-        .with_reply(core_v241::contract::reply),
-    );
-    let dvcw4_v241_contract = Box::new(
-        ContractWrapper::new(
-            dvcw4_v241::contract::execute,
-            dvcw4_v241::contract::instantiate,
-            dvcw4_v241::contract::query,
-        )
-        .with_reply(dvcw4_v241::contract::reply),
-    );
-    let dpps_v241_contract = Box::new(ContractWrapper::new(
-        dpps_v241::contract::execute,
-        dpps_v241::contract::instantiate,
-        dpps_v241::contract::query,
-    ));
-    let dps_v241_contract = Box::new(
-        ContractWrapper::new(
-            dps_v241::contract::execute,
-            dps_v241::contract::instantiate,
-            dps_v241::contract::query,
-        )
-        .with_reply(dps_v241::contract::reply),
-    );
-
-    let core_id = app.store_code(core_v241_contract);
+    let core_id = app.store_code(dao_dao_core_v241_contract());
     let cw4_id = app.store_code(cw4_group_contract());
-    let dvcw4_v241_id = app.store_code(dvcw4_v241_contract);
-    let dpps_v241_id = app.store_code(dpps_v241_contract);
-    let dps_v241_id = app.store_code(dps_v241_contract);
+    let dvcw4_v241_id = app.store_code(dao_voting_cw4_v241_contract());
+    let dpps_v241_id = app.store_code(dao_pre_propose_single_v241_contract());
+    let dps_v241_id = app.store_code(dao_proposal_single_v241_contract());
 
     let governance_instantiate = di_v241::msg::InstantiateMsg {
         dao_uri: None,

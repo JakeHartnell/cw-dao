@@ -3,7 +3,7 @@ use std::borrow::BorrowMut;
 use cosmwasm_std::{to_json_binary, Addr, WasmMsg};
 use cw_multi_test::{next_block, App, AppResponse, Executor};
 use dao_interface::state::{Admin, ModuleInstantiateInfo};
-use dao_testing::contracts::stake_cw20_v03_contract;
+use dao_testing::contracts::{dao_migrator_contract, v1::stake_cw20_v03_contract};
 
 use crate::{
     testing::helpers::get_module_addrs,
@@ -11,8 +11,8 @@ use crate::{
 };
 
 use super::helpers::{
-    get_cw20_init_msg, get_cw4_init_msg, get_v1_code_ids, get_v2_code_ids, migrator_contract,
-    set_cw20_to_dao, set_dummy_proposal, ExecuteParams, ModuleAddrs, VotingType, SENDER_ADDR,
+    get_cw20_init_msg, get_cw4_init_msg, get_v1_code_ids, get_v2_code_ids, set_cw20_to_dao,
+    set_dummy_proposal, ExecuteParams, ModuleAddrs, VotingType, SENDER_ADDR,
 };
 
 pub fn init_v1(app: &mut App, sender: Addr, voting_type: VotingType) -> (Addr, V1CodeIds) {
@@ -255,7 +255,7 @@ pub fn execute_migration(
     custom_proposal_params: Option<Vec<(String, ProposalParams)>>,
 ) -> Result<AppResponse, anyhow::Error> {
     let sender = Addr::unchecked(SENDER_ADDR);
-    let migrator_code_id = app.store_code(migrator_contract());
+    let migrator_code_id = app.store_code(dao_migrator_contract());
     let (new_code_ids, v2_code_ids) = get_v2_code_ids(app);
     let params = params.unwrap_or_else(|| ExecuteParams {
         sub_daos: Some(vec![]),
@@ -368,7 +368,7 @@ pub fn execute_migration_from_core(
     params: Option<ExecuteParams>,
 ) -> Result<AppResponse, anyhow::Error> {
     let sender = Addr::unchecked(SENDER_ADDR);
-    let migrator_code_id = app.store_code(migrator_contract());
+    let migrator_code_id = app.store_code(dao_migrator_contract());
     let (new_code_ids, v2_code_ids) = get_v2_code_ids(app);
     let params = params.unwrap_or_else(|| ExecuteParams {
         sub_daos: Some(vec![]),

@@ -1,12 +1,13 @@
 use anyhow::Result as AnyResult;
 use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-use cosmwasm_std::{to_json_binary, Addr, Empty, MessageInfo, Uint128, WasmMsg};
+use cosmwasm_std::{to_json_binary, Addr, MessageInfo, Uint128, WasmMsg};
 use cw20::Cw20Coin;
 use cw_controllers::{Claim, ClaimsResponse};
-use cw_multi_test::{next_block, App, AppResponse, Contract, ContractWrapper, Executor};
+use cw_multi_test::{next_block, App, AppResponse, Executor};
 use cw_ownable::{Action, Ownership, OwnershipError};
 use cw_utils::Duration;
 use cw_utils::Expiration::AtHeight;
+use dao_testing::contracts::{cw20_base_contract, cw20_stake_contract, v1::cw20_stake_v1_contract};
 use dao_voting::duration::UnstakingDurationError;
 use std::borrow::BorrowMut;
 
@@ -16,7 +17,7 @@ use crate::msg::{
     TotalStakedAtHeightResponse, TotalValueResponse,
 };
 use crate::state::{Config, MAX_CLAIMS};
-use crate::ContractError;
+use cw20_stake::ContractError;
 
 use cw20_stake_v1 as v1;
 
@@ -25,35 +26,6 @@ const ADDR2: &str = "addr0002";
 const ADDR3: &str = "addr0003";
 const ADDR4: &str = "addr0004";
 const OWNER: &str = "owner";
-
-fn contract_staking() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        crate::contract::execute,
-        crate::contract::instantiate,
-        crate::contract::query,
-    )
-    .with_migrate(crate::contract::migrate);
-    Box::new(contract)
-}
-
-fn contract_staking_v1() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        v1::contract::execute,
-        v1::contract::instantiate,
-        v1::contract::query,
-    )
-    .with_migrate(v1::contract::migrate);
-    Box::new(contract)
-}
-
-fn contract_cw20() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        cw20_base::contract::execute,
-        cw20_base::contract::instantiate,
-        cw20_base::contract::query,
-    );
-    Box::new(contract)
-}
 
 fn mock_app() -> App {
     App::default()
@@ -72,7 +44,7 @@ fn get_balance<T: Into<String>, U: Into<String>>(
 }
 
 fn instantiate_cw20(app: &mut App, initial_balances: Vec<Cw20Coin>) -> Addr {
-    let cw20_id = app.store_code(contract_cw20());
+    let cw20_id = app.store_code(cw20_base_contract());
     let msg = cw20_base::msg::InstantiateMsg {
         name: String::from("Test"),
         symbol: String::from("TEST"),
@@ -87,7 +59,7 @@ fn instantiate_cw20(app: &mut App, initial_balances: Vec<Cw20Coin>) -> Addr {
 }
 
 fn instantiate_staking(app: &mut App, cw20: Addr, unstaking_duration: Option<Duration>) -> Addr {
-    let staking_code_id = app.store_code(contract_staking());
+    let staking_code_id = app.store_code(cw20_stake_contract());
     let msg = crate::msg::InstantiateMsg {
         owner: Some(OWNER.to_string()),
         token_address: cw20.to_string(),
@@ -1127,8 +1099,8 @@ fn test_migrate_from_v1() {
         }],
     );
 
-    let v1_code = app.store_code(contract_staking_v1());
-    let v2_code = app.store_code(contract_staking());
+    let v1_code = app.store_code(cw20_stake_v1_contract());
+    let v2_code = app.store_code(cw20_stake_contract());
 
     let staking = app
         .instantiate_contract(

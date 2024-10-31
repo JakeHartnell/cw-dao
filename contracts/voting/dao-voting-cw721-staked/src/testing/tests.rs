@@ -6,7 +6,7 @@ use cw_multi_test::{next_block, App, BankSudo, Executor, SudoMsg};
 use cw_utils::Duration;
 use dao_interface::voting::IsActiveResponse;
 use dao_testing::contracts::{
-    cw721_base_contract, cw721_staked_voting_contract, dao_test_custom_factory,
+    cw721_base_contract, dao_test_custom_factory_contract, dao_voting_cw721_staked_contract,
 };
 use dao_voting::threshold::{ActiveThreshold, ActiveThresholdResponse};
 
@@ -34,7 +34,7 @@ use super::{
 #[test]
 fn test_instantiate_with_new_cw721_collection() -> anyhow::Result<()> {
     let mut app = App::default();
-    let module_id = app.store_code(cw721_staked_voting_contract());
+    let module_id = app.store_code(dao_voting_cw721_staked_contract());
     let cw721_id = app.store_code(cw721_base_contract());
 
     let module_addr = app
@@ -421,7 +421,7 @@ fn test_add_remove_hooks() -> anyhow::Result<()> {
 #[test]
 fn test_instantiate_with_invalid_duration_fails() {
     let mut app = App::default();
-    let module_id = app.store_code(cw721_staked_voting_contract());
+    let module_id = app.store_code(dao_voting_cw721_staked_contract());
     let cw721_id = app.store_code(cw721_base_contract());
 
     let err = app
@@ -462,7 +462,7 @@ fn test_instantiate_with_invalid_duration_fails() {
 fn test_instantiate_zero_active_threshold_count() {
     let mut app = App::default();
     let cw721_id = app.store_code(cw721_base_contract());
-    let module_id = app.store_code(cw721_staked_voting_contract());
+    let module_id = app.store_code(dao_voting_cw721_staked_contract());
 
     app.instantiate_contract(
         module_id,
@@ -502,7 +502,7 @@ fn test_instantiate_zero_active_threshold_count() {
 fn test_instantiate_invalid_active_threshold_count_new_nft() {
     let mut app = App::default();
     let cw721_id = app.store_code(cw721_base_contract());
-    let module_id = app.store_code(cw721_staked_voting_contract());
+    let module_id = app.store_code(dao_voting_cw721_staked_contract());
 
     app.instantiate_contract(
         module_id,
@@ -541,7 +541,7 @@ fn test_instantiate_invalid_active_threshold_count_new_nft() {
 #[should_panic(expected = "Absolute count threshold cannot be greater than the total token supply")]
 fn test_instantiate_invalid_active_threshold_count_existing_nft() {
     let mut app = App::default();
-    let module_id = app.store_code(cw721_staked_voting_contract());
+    let module_id = app.store_code(dao_voting_cw721_staked_contract());
     let cw721_addr = instantiate_cw721_base(&mut app, CREATOR_ADDR, CREATOR_ADDR);
 
     app.instantiate_contract(
@@ -567,7 +567,7 @@ fn test_instantiate_invalid_active_threshold_count_existing_nft() {
 fn test_active_threshold_absolute_count() {
     let mut app = App::default();
     let cw721_id = app.store_code(cw721_base_contract());
-    let module_id = app.store_code(cw721_staked_voting_contract());
+    let module_id = app.store_code(dao_voting_cw721_staked_contract());
 
     let voting_addr = app
         .instantiate_contract(
@@ -647,7 +647,7 @@ fn test_active_threshold_absolute_count() {
 fn test_active_threshold_percent() {
     let mut app = App::default();
     let cw721_id = app.store_code(cw721_base_contract());
-    let module_id = app.store_code(cw721_staked_voting_contract());
+    let module_id = app.store_code(dao_voting_cw721_staked_contract());
 
     let voting_addr = app
         .instantiate_contract(
@@ -708,7 +708,7 @@ fn test_active_threshold_percent() {
 fn test_active_threshold_percent_rounds_up() {
     let mut app = App::default();
     let cw721_id = app.store_code(cw721_base_contract());
-    let module_id = app.store_code(cw721_staked_voting_contract());
+    let module_id = app.store_code(dao_voting_cw721_staked_contract());
 
     let voting_addr = app
         .instantiate_contract(
@@ -810,7 +810,7 @@ fn test_active_threshold_percent_rounds_up() {
 fn test_update_active_threshold() {
     let mut app = App::default();
     let cw721_id = app.store_code(cw721_base_contract());
-    let module_id = app.store_code(cw721_staked_voting_contract());
+    let module_id = app.store_code(dao_voting_cw721_staked_contract());
 
     let voting_addr = app
         .instantiate_contract(
@@ -887,7 +887,7 @@ fn test_update_active_threshold() {
 fn test_active_threshold_percentage_gt_100() {
     let mut app = App::default();
     let cw721_id = app.store_code(cw721_base_contract());
-    let module_id = app.store_code(cw721_staked_voting_contract());
+    let module_id = app.store_code(dao_voting_cw721_staked_contract());
 
     app.instantiate_contract(
         module_id,
@@ -929,7 +929,7 @@ fn test_active_threshold_percentage_gt_100() {
 fn test_active_threshold_percentage_lte_0() {
     let mut app = App::default();
     let cw721_id = app.store_code(cw721_base_contract());
-    let module_id = app.store_code(cw721_staked_voting_contract());
+    let module_id = app.store_code(dao_voting_cw721_staked_contract());
 
     app.instantiate_contract(
         module_id,
@@ -967,7 +967,7 @@ fn test_active_threshold_percentage_lte_0() {
 #[test]
 fn test_invalid_instantiate_msg() {
     let mut app = App::default();
-    let module_id = app.store_code(cw721_staked_voting_contract());
+    let module_id = app.store_code(dao_voting_cw721_staked_contract());
     let cw721_id = app.store_code(cw721_base_contract());
 
     let err = app
@@ -1006,7 +1006,7 @@ fn test_invalid_instantiate_msg() {
 #[test]
 fn test_invalid_initial_nft_msg() {
     let mut app = App::default();
-    let module_id = app.store_code(cw721_staked_voting_contract());
+    let module_id = app.store_code(dao_voting_cw721_staked_contract());
     let cw721_id = app.store_code(cw721_base_contract());
 
     let err = app
@@ -1045,7 +1045,7 @@ fn test_invalid_initial_nft_msg() {
 #[test]
 fn test_invalid_initial_nft_msg_wrong_absolute_count() {
     let mut app = App::default();
-    let module_id = app.store_code(cw721_staked_voting_contract());
+    let module_id = app.store_code(dao_voting_cw721_staked_contract());
     let cw721_id = app.store_code(cw721_base_contract());
 
     let err = app
@@ -1096,7 +1096,7 @@ fn test_invalid_initial_nft_msg_wrong_absolute_count() {
 fn test_no_initial_nfts_fails() {
     let mut app = App::default();
     let cw721_id = app.store_code(cw721_base_contract());
-    let module_id = app.store_code(cw721_staked_voting_contract());
+    let module_id = app.store_code(dao_voting_cw721_staked_contract());
 
     let err = app
         .instantiate_contract(
@@ -1133,9 +1133,9 @@ fn test_no_initial_nfts_fails() {
 #[test]
 fn test_factory() {
     let mut app = App::default();
-    let module_id = app.store_code(cw721_staked_voting_contract());
+    let module_id = app.store_code(dao_voting_cw721_staked_contract());
     let cw721_id = app.store_code(cw721_base_contract());
-    let factory_id = app.store_code(dao_test_custom_factory());
+    let factory_id = app.store_code(dao_test_custom_factory_contract());
 
     // Instantiate factory
     let factory_addr = app
@@ -1186,9 +1186,9 @@ fn test_factory() {
 #[test]
 fn test_factory_with_funds_pass_through() {
     let mut app = App::default();
-    let module_id = app.store_code(cw721_staked_voting_contract());
+    let module_id = app.store_code(dao_voting_cw721_staked_contract());
     let cw721_id = app.store_code(cw721_base_contract());
-    let factory_id = app.store_code(dao_test_custom_factory());
+    let factory_id = app.store_code(dao_test_custom_factory_contract());
 
     // Mint some tokens to creator
     app.sudo(SudoMsg::Bank(BankSudo::Mint {
@@ -1307,7 +1307,7 @@ fn test_factory_with_funds_pass_through() {
 #[should_panic(expected = "Factory message must serialize to WasmMsg::Execute")]
 fn test_unsupported_factory_msg() {
     let mut app = App::default();
-    let module_id = app.store_code(cw721_staked_voting_contract());
+    let module_id = app.store_code(dao_voting_cw721_staked_contract());
     let cw721_id = app.store_code(cw721_base_contract());
 
     // Instantiate using factory succeeds
@@ -1352,9 +1352,9 @@ fn test_unsupported_factory_msg() {
 )]
 fn test_factory_wrong_callback() {
     let mut app = App::default();
-    let module_id = app.store_code(cw721_staked_voting_contract());
+    let module_id = app.store_code(dao_voting_cw721_staked_contract());
     let _cw721_id = app.store_code(cw721_base_contract());
-    let factory_id = app.store_code(dao_test_custom_factory());
+    let factory_id = app.store_code(dao_test_custom_factory_contract());
 
     // Instantiate factory
     let factory_addr = app
@@ -1400,9 +1400,9 @@ fn test_factory_wrong_callback() {
 #[should_panic(expected = "Invalid reply from sub-message: Missing reply data")]
 fn test_factory_no_callback() {
     let mut app = App::default();
-    let module_id = app.store_code(cw721_staked_voting_contract());
+    let module_id = app.store_code(dao_voting_cw721_staked_contract());
     let _cw721_id = app.store_code(cw721_base_contract());
-    let factory_id = app.store_code(dao_test_custom_factory());
+    let factory_id = app.store_code(dao_test_custom_factory_contract());
 
     // Instantiate factory
     let factory_addr = app

@@ -2,57 +2,29 @@ use std::vec;
 
 use cosmwasm_std::{
     testing::{mock_dependencies, mock_env, mock_info},
-    to_json_binary, Addr, Binary, Empty, Reply, SubMsg, SubMsgResponse, SubMsgResult, WasmMsg,
+    to_json_binary, Addr, Binary, Reply, SubMsg, SubMsgResponse, SubMsgResult, WasmMsg,
 };
-
-use cw_multi_test::{App, AppResponse, Contract, ContractWrapper, Executor};
+use cw_multi_test::{App, AppResponse, Executor};
 use dao_interface::state::{Admin, ModuleInstantiateInfo};
+use dao_testing::contracts::{
+    cw20_base_contract, cw_admin_factory_contract, dao_dao_core_contract,
+};
 
 use crate::{
     contract::{
         instantiate, migrate, reply, CONTRACT_NAME, CONTRACT_VERSION, INSTANTIATE_CONTRACT_REPLY_ID,
     },
     msg::{AdminResponse, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
-    ContractError,
 };
+use cw_admin_factory::ContractError;
 
 const ADMIN_ADDR: &str = "admin";
-
-fn factory_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        crate::contract::execute,
-        crate::contract::instantiate,
-        crate::contract::query,
-    )
-    .with_reply(crate::contract::reply);
-    Box::new(contract)
-}
-
-fn cw20_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        cw20_base::contract::execute,
-        cw20_base::contract::instantiate,
-        cw20_base::contract::query,
-    );
-    Box::new(contract)
-}
-
-fn cw_core_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        dao_dao_core::contract::execute,
-        dao_dao_core::contract::instantiate,
-        dao_dao_core::contract::query,
-    )
-    .with_reply(dao_dao_core::contract::reply)
-    .with_migrate(dao_dao_core::contract::migrate);
-    Box::new(contract)
-}
 
 #[test]
 pub fn test_set_self_admin() {
     let mut app = App::default();
-    let code_id = app.store_code(factory_contract());
-    let cw20_code_id = app.store_code(cw20_contract());
+    let code_id = app.store_code(cw_admin_factory_contract());
+    let cw20_code_id = app.store_code(cw20_base_contract());
     let cw20_instantiate = cw20_base::msg::InstantiateMsg {
         name: "DAO".to_string(),
         symbol: "DAO".to_string(),
@@ -75,7 +47,7 @@ pub fn test_set_self_admin() {
         .unwrap();
 
     // Instantiate core contract using factory.
-    let cw_core_code_id = app.store_code(cw_core_contract());
+    let cw_core_code_id = app.store_code(dao_dao_core_contract());
     let instantiate_core = dao_interface::msg::InstantiateMsg {
         dao_uri: None,
         admin: None,
@@ -136,8 +108,8 @@ pub fn test_set_self_admin() {
 #[test]
 pub fn test_authorized_set_self_admin() {
     let mut app = App::default();
-    let code_id = app.store_code(factory_contract());
-    let cw20_code_id = app.store_code(cw20_contract());
+    let code_id = app.store_code(cw_admin_factory_contract());
+    let cw20_code_id = app.store_code(cw20_base_contract());
     let cw20_instantiate = cw20_base::msg::InstantiateMsg {
         name: "DAO".to_string(),
         symbol: "DAO".to_string(),
@@ -169,7 +141,7 @@ pub fn test_authorized_set_self_admin() {
     assert_eq!(current_admin.admin, Some(Addr::unchecked(ADMIN_ADDR)));
 
     // Instantiate core contract using factory.
-    let cw_core_code_id = app.store_code(cw_core_contract());
+    let cw_core_code_id = app.store_code(dao_dao_core_contract());
     let instantiate_core = dao_interface::msg::InstantiateMsg {
         dao_uri: None,
         admin: None,

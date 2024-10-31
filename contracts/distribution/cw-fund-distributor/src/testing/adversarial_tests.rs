@@ -1,9 +1,13 @@
 use crate::msg::ExecuteMsg::ClaimAll;
 use crate::msg::{ExecuteMsg, InstantiateMsg};
-use cosmwasm_std::{to_json_binary, Addr, Binary, Coin, Empty, Uint128};
+use cosmwasm_std::{to_json_binary, Addr, Binary, Coin, Uint128};
 use cw20::{BalanceResponse, Cw20Coin};
-use cw_multi_test::{next_block, App, BankSudo, Contract, ContractWrapper, Executor, SudoMsg};
+use cw_multi_test::{next_block, App, BankSudo, Executor, SudoMsg};
 use cw_utils::Duration;
+use dao_testing::contracts::{
+    cw20_base_contract, cw20_stake_contract, cw_fund_distributor_contract,
+    dao_voting_cw20_staked_contract,
+};
 
 const CREATOR_ADDR: &str = "creator";
 const FEE_DENOM: &str = "ujuno";
@@ -13,44 +17,6 @@ struct BaseTest {
     distributor_address: Addr,
 }
 
-fn distributor_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        crate::contract::execute,
-        crate::contract::instantiate,
-        crate::contract::query,
-    )
-    .with_migrate(crate::contract::migrate);
-    Box::new(contract)
-}
-
-fn cw20_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        cw20_base::contract::execute,
-        cw20_base::contract::instantiate,
-        cw20_base::contract::query,
-    );
-    Box::new(contract)
-}
-
-fn staked_balances_voting_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        dao_voting_cw20_staked::contract::execute,
-        dao_voting_cw20_staked::contract::instantiate,
-        dao_voting_cw20_staked::contract::query,
-    )
-    .with_reply(dao_voting_cw20_staked::contract::reply);
-    Box::new(contract)
-}
-
-fn cw20_staking_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        cw20_stake::contract::execute,
-        cw20_stake::contract::instantiate,
-        cw20_stake::contract::query,
-    );
-    Box::new(contract)
-}
-
 fn instantiate_cw20(
     app: &mut App,
     sender: Addr,
@@ -58,7 +24,7 @@ fn instantiate_cw20(
     name: String,
     symbol: String,
 ) -> Addr {
-    let cw20_id = app.store_code(cw20_contract());
+    let cw20_id = app.store_code(cw20_base_contract());
     let msg = cw20_base::msg::InstantiateMsg {
         name,
         symbol,
@@ -74,10 +40,10 @@ fn instantiate_cw20(
 
 fn setup_test(initial_balances: Vec<Cw20Coin>) -> BaseTest {
     let mut app = App::default();
-    let distributor_id = app.store_code(distributor_contract());
-    let cw20_id = app.store_code(cw20_contract());
-    let voting_id = app.store_code(staked_balances_voting_contract());
-    let stake_cw20_id = app.store_code(cw20_staking_contract());
+    let distributor_id = app.store_code(cw_fund_distributor_contract());
+    let cw20_id = app.store_code(cw20_base_contract());
+    let voting_id = app.store_code(dao_voting_cw20_staked_contract());
+    let stake_cw20_id = app.store_code(cw20_stake_contract());
 
     let voting_address = app
         .instantiate_contract(

@@ -31,6 +31,8 @@ cw-paginate-storage = { workspace = true }
 cw-orch.workspace = true
 
 [dev-dependencies]
+cw-fund-distributor = { workspace = true }
 dao-dao-core = { workspace = true, features = ["library"] }
+dao-testing = { workspace = true }
 cw-multi-test = { workspace = true }
 cw20-base = { workspace = true, features = ["library"] }

@@ -1,8 +1,8 @@
-use cosmwasm_std::{coins, from_json, to_json_binary, Addr, Coin, Empty, Uint128};
+use cosmwasm_std::{coins, from_json, to_json_binary, Addr, Coin, Uint128};
 use cw2::ContractVersion;
 use cw20::Cw20Coin;
 use cw_denom::UncheckedDenom;
-use cw_multi_test::{App, BankSudo, Contract, ContractWrapper, Executor};
+use cw_multi_test::{App, BankSudo, Executor};
 use dao_interface::proposal::InfoResponse;
 use dao_voting::pre_propose::{PreProposeSubmissionPolicy, PreProposeSubmissionPolicyError};
 use dps::query::{ProposalListResponse, ProposalResponse};
@@ -17,6 +17,10 @@ use dao_pre_propose_approval_single::{
 };
 use dao_pre_propose_base::{error::PreProposeError, msg::DepositInfoResponse, state::Config};
 use dao_proposal_single as dps;
+use dao_testing::contracts::{
+    cw20_base_contract, dao_pre_propose_approval_single_contract,
+    dao_pre_propose_approver_contract, dao_proposal_single_contract,
+};
 use dao_testing::helpers::instantiate_with_cw4_groups_governance;
 use dao_voting::{
     deposit::{CheckedDepositInfo, DepositRefundPolicy, DepositToken, UncheckedDepositInfo},
@@ -36,50 +40,12 @@ use crate::msg::{
 // The approver dao contract is the 6th contract instantiated
 const APPROVER: &str = "contract6";
 
-fn cw_dao_proposal_single_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        dps::contract::execute,
-        dps::contract::instantiate,
-        dps::contract::query,
-    )
-    .with_migrate(dps::contract::migrate)
-    .with_reply(dps::contract::reply);
-    Box::new(contract)
-}
-
-fn cw_pre_propose_base_proposal_single() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        dao_pre_propose_approval_single::contract::execute,
-        dao_pre_propose_approval_single::contract::instantiate,
-        dao_pre_propose_approval_single::contract::query,
-    );
-    Box::new(contract)
-}
-
-fn cw20_base_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        cw20_base::contract::execute,
-        cw20_base::contract::instantiate,
-        cw20_base::contract::query,
-    );
-    Box::new(contract)
-}
-
-fn pre_propose_approver_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        crate::contract::execute,
-        crate::contract::instantiate,
-        crate::contract::query,
-    );
-    Box::new(contract)
-}
-
 fn get_proposal_module_approval_single_instantiate(
     app: &mut App,
     deposit_info: Option<UncheckedDepositInfo>,
     open_proposal_submission: bool,
 ) -> dps::msg::InstantiateMsg {
-    let pre_propose_id = app.store_code(cw_pre_propose_base_proposal_single());
+    let pre_propose_id = app.store_code(dao_pre_propose_approval_single_contract());
 
     let submission_policy = if open_proposal_submission {
         PreProposeSubmissionPolicy::Anyone { denylist: vec![] }
@@ -126,7 +92,7 @@ fn get_proposal_module_approver_instantiate(
     _open_proposal_submission: bool,
     pre_propose_approval_contract: String,
 ) -> dps::msg::InstantiateMsg {
-    let pre_propose_id = app.store_code(pre_propose_approver_contract());
+    let pre_propose_id = app.store_code(dao_pre_propose_approver_contract());
 
     dps::msg::InstantiateMsg {
         threshold: Threshold::AbsolutePercentage {
@@ -191,7 +157,7 @@ fn setup_default_test(
     deposit_info: Option<UncheckedDepositInfo>,
     open_proposal_submission: bool,
 ) -> DefaultTestSetup {
-    let dps_id = app.store_code(cw_dao_proposal_single_contract());
+    let dps_id = app.store_code(dao_proposal_single_contract());
 
     // Instantiate SubDAO with pre-propose-approval-single
     let proposal_module_instantiate = get_proposal_module_approval_single_instantiate(

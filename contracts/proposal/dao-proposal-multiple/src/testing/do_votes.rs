@@ -3,7 +3,7 @@ use cw20::Cw20Coin;
 use cw_denom::CheckedDenom;
 use cw_multi_test::{App, BankSudo, Executor};
 use dao_interface::state::ProposalModule;
-use dao_testing::ShouldExecute;
+use dao_testing::{contracts::dao_proposal_multiple_contract, ShouldExecute};
 use dao_voting::{
     deposit::{CheckedDepositInfo, UncheckedDepositInfo},
     multiple_choice::{
@@ -23,7 +23,7 @@ use crate::{
             instantiate_with_cw20_balances_governance, instantiate_with_staked_balances_governance,
         },
         queries::query_deposit_config_and_pre_propose_module,
-        tests::{get_pre_propose_info, proposal_multiple_contract, TestMultipleChoiceVote},
+        tests::{get_pre_propose_info, TestMultipleChoiceVote},
     },
 };
 use dao_pre_propose_multiple as cppm;
@@ -96,7 +96,7 @@ where
     F: Fn(&mut App, InstantiateMsg, Option<Vec<Cw20Coin>>) -> Addr,
 {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
 
     let mut initial_balances = votes
         .iter()

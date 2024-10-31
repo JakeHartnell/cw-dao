@@ -1,56 +1,31 @@
-use cosmwasm_std::{coins, to_json_binary, Addr, Empty, Uint128};
+use cosmwasm_std::{coins, to_json_binary, Addr, Uint128};
 use cw20::{Cw20Coin, Cw20ExecuteMsg};
 use cw_denom::UncheckedDenom;
-use cw_multi_test::{App, BankSudo, Contract, ContractWrapper, Executor, SudoMsg};
+use cw_multi_test::{App, BankSudo, Executor, SudoMsg};
 use cw_ownable::OwnershipError;
 use cw_vesting::{
     msg::{InstantiateMsg as PayrollInstantiateMsg, QueryMsg as PayrollQueryMsg},
     vesting::{Schedule, Status, Vest},
 };
+use dao_testing::contracts::{
+    cw20_base_contract, cw_payroll_factory_contract, cw_vesting_contract,
+};
 
 use crate::{
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg, ReceiveMsg},
     state::VestingContract,
-    ContractError,
 };
+use cw_payroll_factory::ContractError;
 
 const ALICE: &str = "alice";
 const BOB: &str = "bob";
 const INITIAL_BALANCE: u128 = 1000000000;
 const NATIVE_DENOM: &str = "denom";
 
-fn factory_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        crate::contract::execute,
-        crate::contract::instantiate,
-        crate::contract::query,
-    )
-    .with_reply(crate::contract::reply);
-    Box::new(contract)
-}
-
-fn cw20_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        cw20_base::contract::execute,
-        cw20_base::contract::instantiate,
-        cw20_base::contract::query,
-    );
-    Box::new(contract)
-}
-
-pub fn cw_vesting_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        cw_vesting::contract::execute,
-        cw_vesting::contract::instantiate,
-        cw_vesting::contract::query,
-    );
-    Box::new(contract)
-}
-
 #[test]
 pub fn test_instantiate_native_payroll_contract() {
     let mut app = App::default();
-    let code_id = app.store_code(factory_contract());
+    let code_id = app.store_code(cw_payroll_factory_contract());
     let cw_vesting_code_id = app.store_code(cw_vesting_contract());
 
     // Instantiate factory with only Alice allowed to instantiate payroll contracts
@@ -211,8 +186,8 @@ pub fn test_instantiate_native_payroll_contract() {
 #[test]
 pub fn test_instantiate_cw20_payroll_contract() {
     let mut app = App::default();
-    let code_id = app.store_code(factory_contract());
-    let cw20_code_id = app.store_code(cw20_contract());
+    let code_id = app.store_code(cw_payroll_factory_contract());
+    let cw20_code_id = app.store_code(cw20_base_contract());
     let cw_vesting_code_id = app.store_code(cw_vesting_contract());
 
     // Instantiate cw20 contract with balances for Alice
@@ -343,7 +318,7 @@ pub fn test_instantiate_cw20_payroll_contract() {
 #[test]
 fn test_instantiate_wrong_ownership_native() {
     let mut app = App::default();
-    let code_id = app.store_code(factory_contract());
+    let code_id = app.store_code(cw_payroll_factory_contract());
     let cw_vesting_code_id = app.store_code(cw_vesting_contract());
 
     let amount = Uint128::new(1000000);
@@ -413,7 +388,7 @@ fn test_instantiate_wrong_ownership_native() {
 #[test]
 fn test_update_vesting_code_id() {
     let mut app = App::default();
-    let code_id = app.store_code(factory_contract());
+    let code_id = app.store_code(cw_payroll_factory_contract());
     let cw_vesting_code_id = app.store_code(cw_vesting_contract());
     let cw_vesting_code_two = app.store_code(cw_vesting_contract());
 
@@ -512,8 +487,8 @@ fn test_update_vesting_code_id() {
 #[test]
 pub fn test_inconsistent_cw20_amount() {
     let mut app = App::default();
-    let code_id = app.store_code(factory_contract());
-    let cw20_code_id = app.store_code(cw20_contract());
+    let code_id = app.store_code(cw_payroll_factory_contract());
+    let cw20_code_id = app.store_code(cw20_base_contract());
     let cw_vesting_code_id = app.store_code(cw_vesting_contract());
     // Instantiate cw20 contract with balances for Alice
     let cw20_addr = app

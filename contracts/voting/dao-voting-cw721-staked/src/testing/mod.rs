@@ -18,7 +18,7 @@ mod test_tube_env;
 use cosmwasm_std::Addr;
 use cw_multi_test::{App, Executor};
 use cw_utils::Duration;
-use dao_testing::contracts::cw721_staked_voting_contract;
+use dao_testing::contracts::dao_voting_cw721_staked_contract;
 
 use crate::msg::{InstantiateMsg, NftContract};
 
@@ -35,7 +35,7 @@ pub(crate) struct CommonTest {
 
 pub(crate) fn setup_test(unstaking_duration: Option<Duration>) -> CommonTest {
     let mut app = App::default();
-    let module_id = app.store_code(cw721_staked_voting_contract());
+    let module_id = app.store_code(dao_voting_cw721_staked_contract());
 
     let nft = instantiate_cw721_base(&mut app, CREATOR_ADDR, CREATOR_ADDR);
     let module = app

@@ -9,7 +9,7 @@ use app::OmniflixApp;
 use cosmwasm_std::Addr;
 use cw_multi_test::Executor;
 use cw_utils::Duration;
-use dao_testing::contracts::onft_staked_voting_contract;
+use dao_testing::contracts::dao_voting_onft_staked_contract;
 use dao_voting::threshold::ActiveThreshold;
 
 use crate::msg::{InstantiateMsg, OnftCollection};
@@ -33,7 +33,7 @@ pub(crate) fn setup_test(
     active_threshold: Option<ActiveThreshold>,
 ) -> CommonTest {
     let mut app = OmniflixApp::new();
-    let module_id = app.store_code(onft_staked_voting_contract());
+    let module_id = app.store_code(dao_voting_onft_staked_contract());
 
     let nft = create_onft_collection(&mut app, "nft", DAO, DAO);
     let module = app

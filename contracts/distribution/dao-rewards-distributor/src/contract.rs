@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    ensure, from_json, to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Order, Response,
-    StdError, StdResult, Uint128, Uint256,
+    ensure, from_json, to_json_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env,
+    MessageInfo, Order, Response, StdError, StdResult, Uint128, Uint256,
 };
 use cw2::{get_contract_version, set_contract_version};
 use cw20::{Cw20ReceiveMsg, Denom};
@@ -74,6 +74,7 @@ pub fn execute(
             emission_rate,
             vp_contract,
             hook_caller,
+            open_funding,
             withdraw_destination,
         } => execute_update(
             deps,
@@ -83,11 +84,16 @@ pub fn execute(
             emission_rate,
             vp_contract,
             hook_caller,
+            open_funding,
             withdraw_destination,
         ),
         ExecuteMsg::Fund(FundMsg { id }) => execute_fund_native(deps, env, info, id),
+        ExecuteMsg::FundLatest {} => execute_fund_latest_native(deps, env, info),
         ExecuteMsg::Claim { id } => execute_claim(deps, env, info, id),
         ExecuteMsg::Withdraw { id } => execute_withdraw(deps, info, env, id),
+        ExecuteMsg::UnsafeForceWithdraw { amount } => {
+            execute_unsafe_force_withdraw(deps, info, amount)
+        }
     }
 }
 
@@ -119,7 +125,30 @@ fn execute_receive_cw20(
                 }
             };
 
-            execute_fund(deps, env, distribution, wrapper.amount)
+            let sender = deps.api.addr_validate(&wrapper.sender)?;
+
+            execute_fund(deps, env, sender, distribution, wrapper.amount)
+        }
+        ReceiveCw20Msg::FundLatest {} => {
+            let id = COUNT.load(deps.storage)?;
+            let distribution = DISTRIBUTIONS
+                .load(deps.storage, id)
+                .map_err(|_| ContractError::DistributionNotFound { id })?;
+
+            match &distribution.denom {
+                Denom::Native(_) => return Err(ContractError::InvalidFunds {}),
+                Denom::Cw20(addr) => {
+                    // ensure funding is coming from the cw20 we are currently
+                    // distributing
+                    if addr != info.sender {
+                        return Err(ContractError::InvalidCw20 {});
+                    }
+                }
+            };
+
+            let sender = deps.api.addr_validate(&wrapper.sender)?;
+
+            execute_fund(deps, env, sender, distribution, wrapper.amount)
         }
     }
 }
@@ -152,6 +181,8 @@ fn execute_create(
 
     msg.emission_rate.validate()?;
 
+    let open_funding = msg.open_funding.unwrap_or(true);
+
     // Initialize the distribution state
     let distribution = DistributionState {
         id,
@@ -166,6 +197,7 @@ fn execute_create(
         vp_contract,
         hook_caller: hook_caller.clone(),
         funded_amount: Uint128::zero(),
+        open_funding,
         withdraw_destination,
         historical_earned_puvp: Uint256::zero(),
     };
@@ -192,11 +224,11 @@ fn execute_create(
         match &distribution.denom {
             Denom::Native(denom) => {
                 // ensures there is exactly 1 coin passed that matches the denom
-                let amount = must_pay(&info, denom)?;
+                let initial_funds = must_pay(&info, denom)?;
 
-                execute_fund(deps, env, distribution, amount)?;
+                execute_fund(deps, env, info.sender, distribution, initial_funds)?;
 
-                response = response.add_attribute("amount_funded", amount);
+                response = response.add_attribute("amount_funded", initial_funds);
             }
             Denom::Cw20(_) => return Err(ContractError::NoFundsOnCw20Create {}),
         }
@@ -215,6 +247,7 @@ fn execute_update(
     emission_rate: Option<EmissionRate>,
     vp_contract: Option<String>,
     hook_caller: Option<String>,
+    open_funding: Option<bool>,
     withdraw_destination: Option<String>,
 ) -> Result<Response, ContractError> {
     nonpayable(&info)?;
@@ -247,6 +280,10 @@ fn execute_update(
         subscribe_distribution_to_hook(deps.storage, id, distribution.hook_caller.clone())?;
     }
 
+    if let Some(open_funding) = open_funding {
+        distribution.open_funding = open_funding;
+    }
+
     if let Some(withdraw_destination) = withdraw_destination {
         distribution.withdraw_destination = deps.api.addr_validate(&withdraw_destination)?;
     }
@@ -257,6 +294,15 @@ fn execute_update(
         .add_attribute("action", "update")
         .add_attribute("id", id.to_string())
         .add_attribute("denom", distribution.get_denom_string()))
+}
+
+fn execute_fund_latest_native(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
+    let id = COUNT.load(deps.storage)?;
+    execute_fund_native(deps, env, info, id)
 }
 
 fn execute_fund_native(
@@ -276,15 +322,21 @@ fn execute_fund_native(
         Denom::Cw20(_) => return Err(ContractError::InvalidFunds {}),
     };
 
-    execute_fund(deps, env, distribution, amount)
+    execute_fund(deps, env, info.sender, distribution, amount)
 }
 
 fn execute_fund(
     deps: DepsMut,
     env: Env,
+    sender: Addr,
     distribution: DistributionState,
     amount: Uint128,
 ) -> Result<Response, ContractError> {
+    // only the owner can fund if open_funding is disabled
+    if !distribution.open_funding {
+        cw_ownable::assert_owner(deps.storage, &sender)?;
+    }
+
     match distribution.active_epoch.emission_rate {
         EmissionRate::Paused {} => execute_fund_paused(deps, distribution, amount),
         EmissionRate::Immediate {} => execute_fund_immediate(deps, env, distribution, amount),
@@ -545,6 +597,27 @@ fn execute_update_owner(
     Ok(Response::new().add_attributes(ownership.into_attributes()))
 }
 
+fn execute_unsafe_force_withdraw(
+    deps: DepsMut,
+    info: MessageInfo,
+    amount: Coin,
+) -> Result<Response, ContractError> {
+    nonpayable(&info)?;
+
+    // only the owner can initiate a force withdraw
+    cw_ownable::assert_owner(deps.storage, &info.sender)?;
+
+    let send = CosmosMsg::Bank(BankMsg::Send {
+        to_address: info.sender.to_string(),
+        amount: vec![amount.clone()],
+    });
+
+    Ok(Response::new()
+        .add_message(send)
+        .add_attribute("action", "unsafe_force_withdraw")
+        .add_attribute("amount", amount.to_string()))
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
@@ -561,10 +634,13 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             start_after,
             limit,
         )?)?),
-        QueryMsg::Distribution { id } => {
-            let state = DISTRIBUTIONS.load(deps.storage, id)?;
-            Ok(to_json_binary(&state)?)
-        }
+        QueryMsg::UndistributedRewards { id } => Ok(to_json_binary(
+            &query_undistributed_rewards(deps, env, id)
+                .map_err(|e| StdError::generic_err(e.to_string()))?,
+        )?),
+        QueryMsg::Distribution { id } => Ok(to_json_binary(
+            &query_distribution(deps, id).map_err(|e| StdError::generic_err(e.to_string()))?,
+        )?),
         QueryMsg::Distributions { start_after, limit } => Ok(to_json_binary(
             &query_distributions(deps, start_after, limit)?,
         )?),
@@ -639,6 +715,19 @@ fn query_pending_rewards(
     Ok(PendingRewardsResponse { pending_rewards })
 }
 
+fn query_undistributed_rewards(deps: Deps, env: Env, id: u64) -> Result<Uint128, ContractError> {
+    let distribution = query_distribution(deps, id)?;
+    let undistributed_rewards = distribution.get_undistributed_rewards(&env.block)?;
+    Ok(undistributed_rewards)
+}
+
+fn query_distribution(deps: Deps, id: u64) -> Result<DistributionState, ContractError> {
+    let state = DISTRIBUTIONS
+        .load(deps.storage, id)
+        .map_err(|_| ContractError::DistributionNotFound { id })?;
+    Ok(state)
+}
+
 fn query_distributions(
     deps: Deps,
     start_after: Option<u64>,
@@ -672,7 +761,7 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 
     // only allow upgrades
     if new_version <= current_version {
-        return Err(ContractError::MigrationErrorInvalidVersion {
+        return Err(ContractError::MigrationErrorInvalidVersionNotNewer {
             new: new_version.to_string(),
             current: current_version.to_string(),
         });

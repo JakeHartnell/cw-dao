@@ -16,7 +16,10 @@ use dao_interface::{
     state::{Admin, ModuleInstantiateInfo},
     voting::InfoResponse,
 };
-use dao_testing::{ShouldExecute, TestSingleChoiceVote};
+use dao_testing::{
+    contracts::{dao_pre_propose_single_contract, dao_proposal_single_contract},
+    ShouldExecute, TestSingleChoiceVote,
+};
 use dao_voting::{
     deposit::{CheckedDepositInfo, UncheckedDepositInfo, VotingModuleTokenType},
     pre_propose::{PreProposeInfo, PreProposeSubmissionPolicy, ProposalCreationPolicy},
@@ -38,7 +41,6 @@ use crate::{
     query::{ProposalResponse, VoteInfo},
     state::Config,
     testing::{
-        contracts::{pre_propose_single_contract, proposal_single_contract},
         execute::{
             add_proposal_hook, add_proposal_hook_should_fail, add_vote_hook,
             add_vote_hook_should_fail, close_proposal, close_proposal_should_fail,
@@ -62,8 +64,8 @@ use crate::{
             query_voting_module,
         },
     },
-    ContractError,
 };
+use dao_proposal_single::ContractError;
 
 use super::{
     do_votes::do_votes_staked_balances,
@@ -3092,7 +3094,7 @@ fn test_migrate_from_compatible() {
         proposal_id: _,
     } = setup_test(vec![]);
 
-    let new_code_id = app.store_code(proposal_single_contract());
+    let new_code_id = app.store_code(dao_proposal_single_contract());
     let start_config = query_proposal_config(&app, &proposal_module);
 
     app.execute(
@@ -3154,8 +3156,8 @@ pub fn test_migrate_updates_version() {
 
 //     let cw20_id = app.store_code(cw20_base_contract());
 //     let cw20_stake_id = app.store_code(cw20_stake_contract());
-//     let staked_balances_voting_id = app.store_code(cw20_staked_balances_voting_contract());
-//     let core_contract_id = app.store_code(cw_core_contract());
+//     let staked_balances_voting_id = app.store_code(dao_voting_cw20_staked_contract());
+//     let core_contract_id = app.store_code(dao_dao_core_contract());
 
 // let instantiate_core = dao_interface::msg::InstantiateMsg {
 //     admin: None,
@@ -3278,8 +3280,8 @@ pub fn test_migrate_updates_version() {
 //     )
 //     .unwrap();
 
-//     let v2_proposal_single = app.store_code(proposal_single_contract());
-//     let pre_propose_single = app.store_code(pre_propose_single_contract());
+//     let v2_proposal_single = app.store_code(dao_proposal_single_contract());
+//     let pre_propose_single = app.store_code(dao_pre_propose_approval_single_contract());
 
 //     // Attempt to migrate. This will fail as there is a pending
 //     // proposal.
@@ -3754,7 +3756,10 @@ fn test_reply_hooks_mock() {
     // Do it again. This time, there is no module so this should error.
     let _id = failed_pre_propose_module_hook_id();
     let err = reply(deps.as_mut(), env.clone(), prepropose_reply_msg).unwrap_err();
-    assert!(matches!(err, ContractError::InvalidReplyID { id: _ }));
+    assert!(matches!(
+        err,
+        crate::ContractError::InvalidReplyID { id: _ }
+    ));
 
     // Check that we fail open.
     let status = CREATION_POLICY.load(deps.as_ref().storage).unwrap();
@@ -3933,7 +3938,7 @@ fn test_update_pre_propose_module() {
         ProposalCreationPolicy::Module { addr } => addr,
     };
 
-    let pre_propose_id = app.store_code(pre_propose_single_contract());
+    let pre_propose_id = app.store_code(dao_pre_propose_single_contract());
 
     // Make a proposal to switch to a new pre-propose moudle.
     mint_cw20s(&mut app, &gov_token, &core_addr, CREATOR_ADDR, 10_000_000);

@@ -23,7 +23,8 @@ use dao_voting::{
 };
 
 use super::CREATOR_ADDR;
-use crate::{query::ProposalResponse, ContractError};
+use crate::query::ProposalResponse;
+use dao_proposal_single::ContractError;
 
 struct CommonTest {
     app: App,

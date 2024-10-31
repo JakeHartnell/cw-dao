@@ -3,7 +3,7 @@ use cw4::{HooksResponse, Member, MemberListResponse, MemberResponse, TotalWeight
 use cw721::{NftInfoResponse, OwnerOfResponse};
 use cw_multi_test::{App, Executor};
 use dao_cw721_extensions::roles::{ExecuteExt, MetadataExt, QueryExt};
-use dao_testing::contracts::{cw721_roles_contract, cw721_staked_voting_contract};
+use dao_testing::contracts::{cw721_roles_contract, dao_voting_cw721_staked_contract};
 use dao_voting_cw721_staked::msg::{InstantiateMsg as Cw721StakedInstantiateMsg, NftContract};
 
 use crate::error::RolesContractError;
@@ -254,7 +254,7 @@ fn test_send_permissions() {
         .unwrap();
 
     // Instantiate an NFT staking voting contract for testing SendNft
-    let dao_voting_cw721_staked_id = app.store_code(cw721_staked_voting_contract());
+    let dao_voting_cw721_staked_id = app.store_code(dao_voting_cw721_staked_contract());
     let cw721_staked_addr = app
         .instantiate_contract(
             dao_voting_cw721_staked_id,

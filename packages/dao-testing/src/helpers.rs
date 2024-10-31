@@ -7,9 +7,8 @@ use dao_voting::threshold::ActiveThreshold;
 use dao_voting_cw4::msg::GroupContract;
 
 use crate::contracts::{
-    cw20_balances_voting_contract, cw20_base_contract, cw20_stake_contract,
-    cw20_staked_balances_voting_contract, cw4_group_contract, dao_dao_contract,
-    dao_voting_cw4_contract,
+    cw20_base_contract, cw20_stake_contract, cw4_group_contract, dao_dao_core_contract,
+    dao_voting_cw20_balance_contract, dao_voting_cw20_staked_contract, dao_voting_cw4_contract,
 };
 
 const CREATOR_ADDR: &str = "creator";
@@ -21,8 +20,8 @@ pub fn instantiate_with_cw20_balances_governance(
     initial_balances: Option<Vec<Cw20Coin>>,
 ) -> Addr {
     let cw20_id = app.store_code(cw20_base_contract());
-    let core_id = app.store_code(dao_dao_contract());
-    let votemod_id = app.store_code(cw20_balances_voting_contract());
+    let core_id = app.store_code(dao_dao_core_contract());
+    let votemod_id = app.store_code(dao_voting_cw20_balance_contract());
 
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
@@ -125,8 +124,8 @@ pub fn instantiate_with_staked_balances_governance(
 
     let cw20_id = app.store_code(cw20_base_contract());
     let cw20_stake_id = app.store_code(cw20_stake_contract());
-    let staked_balances_voting_id = app.store_code(cw20_staked_balances_voting_contract());
-    let core_contract_id = app.store_code(dao_dao_contract());
+    let staked_balances_voting_id = app.store_code(dao_voting_cw20_staked_contract());
+    let core_contract_id = app.store_code(dao_dao_core_contract());
 
     let instantiate_core = dao_interface::msg::InstantiateMsg {
         dao_uri: None,
@@ -233,8 +232,8 @@ pub fn instantiate_with_staking_active_threshold(
 ) -> Addr {
     let cw20_id = app.store_code(cw20_base_contract());
     let cw20_staking_id = app.store_code(cw20_stake_contract());
-    let governance_id = app.store_code(dao_dao_contract());
-    let votemod_id = app.store_code(cw20_staked_balances_voting_contract());
+    let governance_id = app.store_code(dao_dao_core_contract());
+    let votemod_id = app.store_code(dao_voting_cw20_staked_contract());
 
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![
@@ -307,7 +306,7 @@ pub fn instantiate_with_cw4_groups_governance(
     initial_weights: Option<Vec<Cw20Coin>>,
 ) -> Addr {
     let cw4_id = app.store_code(cw4_group_contract());
-    let core_id = app.store_code(dao_dao_contract());
+    let core_id = app.store_code(dao_dao_core_contract());
     let votemod_id = app.store_code(dao_voting_cw4_contract());
 
     let initial_weights = initial_weights.unwrap_or_default();

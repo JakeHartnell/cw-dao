@@ -14,8 +14,8 @@ use crate::{
         },
     },
     types::ProposalParams,
-    ContractError,
 };
+use dao_migrator::ContractError;
 
 use super::{helpers::demo_contract, setup::setup_dao_v1_multiple_proposals};
 

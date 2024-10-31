@@ -4,8 +4,9 @@ use cw_multi_test::{next_block, App, Executor};
 use cw_utils::Duration;
 use dao_interface::query::{GetItemResponse, ProposalModuleCountResponse};
 use dao_testing::contracts::{
-    cw20_base_contract, cw20_stake_contract, cw20_staked_balances_voting_contract,
-    dao_dao_contract, proposal_single_contract, v1_dao_dao_contract, v1_proposal_single_contract,
+    cw20_base_contract, cw20_stake_contract, dao_dao_core_contract, dao_proposal_single_contract,
+    dao_voting_cw20_staked_contract,
+    v1::{cw_core_v1_contract, cw_proposal_single_v1_contract},
 };
 use dao_voting::veto::VetoConfig;
 use dao_voting::{
@@ -47,14 +48,14 @@ fn test_v1_v2_full_migration() {
     // instantiate a v1 DAO
     // ----
 
-    let proposal_code = app.store_code(v1_proposal_single_contract());
-    let core_code = app.store_code(v1_dao_dao_contract());
+    let proposal_code = app.store_code(cw_proposal_single_v1_contract());
+    let core_code = app.store_code(cw_core_v1_contract());
 
     // cw20 staking and voting module has not changed across v1->v2 so
     // we use the current edition.
     let cw20_code = app.store_code(cw20_base_contract());
     let cw20_stake_code = app.store_code(cw20_stake_contract());
-    let voting_code = app.store_code(cw20_staked_balances_voting_contract());
+    let voting_code = app.store_code(dao_voting_cw20_staked_contract());
 
     let initial_balances = vec![Cw20Coin {
         address: sender.to_string(),
@@ -300,8 +301,8 @@ fn test_v1_v2_full_migration() {
     // create a proposal to migrate to v2
     // ----
 
-    let v2_core_code = app.store_code(dao_dao_contract());
-    let v2_proposal_code = app.store_code(proposal_single_contract());
+    let v2_core_code = app.store_code(dao_dao_core_contract());
+    let v2_proposal_code = app.store_code(dao_proposal_single_contract());
 
     let pre_propose_info = get_pre_propose_info(
         &mut app,

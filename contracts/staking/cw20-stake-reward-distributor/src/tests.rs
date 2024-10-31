@@ -1,58 +1,24 @@
+use cosmwasm_std::{to_json_binary, Addr, Uint128, WasmMsg};
+use cw20::Cw20Coin;
+use cw20_stake_reward_distributor_v1 as v1;
+use cw_multi_test::{next_block, App, Executor};
+use cw_ownable::{Action, Expiration, Ownership, OwnershipError};
+use dao_testing::contracts::{
+    cw20_base_contract, cw20_stake_contract, cw20_stake_reward_distributor_contract,
+    v1::cw20_stake_reward_distributor_v1_contract,
+};
+
 use crate::{
     msg::{ExecuteMsg, InfoResponse, InstantiateMsg, MigrateMsg, QueryMsg},
     state::Config,
-    ContractError,
 };
-
-use cw20_stake_reward_distributor_v1 as v1;
-
-use cosmwasm_std::{to_json_binary, Addr, Empty, Uint128, WasmMsg};
-use cw20::Cw20Coin;
-use cw_multi_test::{next_block, App, Contract, ContractWrapper, Executor};
-use cw_ownable::{Action, Expiration, Ownership, OwnershipError};
+use cw20_stake_reward_distributor::ContractError;
 
 const OWNER: &str = "owner";
 const OWNER2: &str = "owner2";
 
-pub fn cw20_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        cw20_base::contract::execute,
-        cw20_base::contract::instantiate,
-        cw20_base::contract::query,
-    );
-    Box::new(contract)
-}
-
-fn staking_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        cw20_stake::contract::execute,
-        cw20_stake::contract::instantiate,
-        cw20_stake::contract::query,
-    );
-    Box::new(contract)
-}
-
-fn distributor_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        crate::contract::execute,
-        crate::contract::instantiate,
-        crate::contract::query,
-    )
-    .with_migrate(crate::contract::migrate);
-    Box::new(contract)
-}
-
-fn distributor_contract_v1() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        v1::contract::execute,
-        v1::contract::instantiate,
-        v1::contract::query,
-    );
-    Box::new(contract)
-}
-
 fn instantiate_cw20(app: &mut App, initial_balances: Vec<Cw20Coin>) -> Addr {
-    let cw20_id = app.store_code(cw20_contract());
+    let cw20_id = app.store_code(cw20_base_contract());
     let msg = cw20_base::msg::InstantiateMsg {
         name: String::from("Test"),
         symbol: String::from("TEST"),
@@ -67,7 +33,7 @@ fn instantiate_cw20(app: &mut App, initial_balances: Vec<Cw20Coin>) -> Addr {
 }
 
 fn instantiate_staking(app: &mut App, cw20_addr: Addr) -> Addr {
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(cw20_stake_contract());
     let msg = cw20_stake::msg::InstantiateMsg {
         owner: Some(OWNER.to_string()),
         token_address: cw20_addr.to_string(),
@@ -85,7 +51,7 @@ fn instantiate_staking(app: &mut App, cw20_addr: Addr) -> Addr {
 }
 
 fn instantiate_distributor(app: &mut App, msg: InstantiateMsg) -> Addr {
-    let code_id = app.store_code(distributor_contract());
+    let code_id = app.store_code(cw20_stake_reward_distributor_contract());
     app.instantiate_contract(
         code_id,
         Addr::unchecked(OWNER),
@@ -351,7 +317,7 @@ fn test_instantiate_invalid_addrs() {
         reward_token: "invalid_cw20".to_string(),
     };
 
-    let code_id = app.store_code(distributor_contract());
+    let code_id = app.store_code(cw20_stake_reward_distributor_contract());
     let err: ContractError = app
         .instantiate_contract(
             code_id,
@@ -689,8 +655,8 @@ fn test_migrate_from_v1() {
     );
     let staking_addr = instantiate_staking(&mut app, cw20_addr.clone());
 
-    let v1_code = app.store_code(distributor_contract_v1());
-    let v2_code = app.store_code(distributor_contract());
+    let v1_code = app.store_code(cw20_stake_reward_distributor_v1_contract());
+    let v2_code = app.store_code(cw20_stake_reward_distributor_contract());
     let distributor = app
         .instantiate_contract(
             v1_code,

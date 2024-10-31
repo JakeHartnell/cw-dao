@@ -183,6 +183,8 @@ pub struct DistributionState {
     /// address that will update the reward split when the voting power
     /// distribution changes
     pub hook_caller: Addr,
+    /// whether or not non-owners can fund the distribution
+    pub open_funding: bool,
     /// total amount of rewards funded that will be distributed in the active
     /// epoch.
     pub funded_amount: Uint128,
@@ -227,27 +229,53 @@ impl DistributionState {
         }
     }
 
-    /// get the total rewards to be distributed based on the active epoch's
-    /// emission rate
-    pub fn get_total_rewards(&self) -> Result<Uint128, ContractError> {
+    /// get rewards to be distributed until the given expiration
+    pub fn get_rewards_until(&self, expiration: Expiration) -> Result<Uint128, ContractError> {
         match self.active_epoch.emission_rate {
             EmissionRate::Paused {} => Ok(Uint128::zero()),
             EmissionRate::Immediate {} => Ok(self.funded_amount),
             EmissionRate::Linear {
                 amount, duration, ..
             } => {
-                let epoch_duration = self
-                    .active_epoch
-                    .ends_at
-                    .duration_since(&self.active_epoch.started_at)?;
+                // if not yet started, return 0.
+                if let Expiration::Never {} = self.active_epoch.started_at {
+                    return Ok(Uint128::zero());
+                }
+
+                let epoch_duration = expiration.duration_since(&self.active_epoch.started_at)?;
 
                 // count total intervals of the rewards emission that will pass
                 // based on the start and end times.
-                let complete_distribution_periods = epoch_duration.checked_div(&duration)?;
+                let complete_distribution_periods = epoch_duration.ratio(&duration)?;
 
-                Ok(amount.checked_mul(complete_distribution_periods)?)
+                Ok(amount.checked_mul_floor(complete_distribution_periods)?)
             }
         }
+    }
+
+    /// get the total rewards to be distributed based on the active epoch's
+    /// emission rate and end time
+    pub fn get_total_rewards(&self) -> Result<Uint128, ContractError> {
+        self.get_rewards_until(self.active_epoch.ends_at)
+    }
+
+    /// get the currently undistributed rewards based on the active epoch's
+    /// emission rate
+    pub fn get_undistributed_rewards(
+        &self,
+        current_block: &BlockInfo,
+    ) -> Result<Uint128, ContractError> {
+        // get last time rewards were distributed (current block or previous end
+        // time)
+        let last_time_rewards_distributed = self.get_latest_reward_distribution_time(current_block);
+
+        // get rewards distributed so far
+        let distributed = self.get_rewards_until(last_time_rewards_distributed)?;
+
+        // undistributed rewards are the remaining of the funded amount
+        let undistributed = self.funded_amount.checked_sub(distributed)?;
+
+        Ok(undistributed)
     }
 
     /// Finish current epoch early and start a new one with a new emission rate.
@@ -262,14 +290,12 @@ impl DistributionState {
             return Ok(());
         }
 
-        // 1. finish current epoch by updating rewards and setting end to now
+        // 1. finish current epoch by updating rewards and setting end to the
+        //    last time rewards were distributed (which is either the end date
+        //    or the current block)
         self.active_epoch.total_earned_puvp =
             get_active_total_earned_puvp(deps, current_block, self)?;
-        self.active_epoch.ends_at = match self.active_epoch.started_at {
-            Expiration::Never {} => Expiration::Never {},
-            Expiration::AtHeight(_) => Expiration::AtHeight(current_block.height),
-            Expiration::AtTime(_) => Expiration::AtTime(current_block.time),
-        };
+        self.active_epoch.ends_at = self.get_latest_reward_distribution_time(current_block);
 
         // 2. add current epoch rewards earned to historical rewards
         self.historical_earned_puvp = self

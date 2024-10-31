@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    coins, to_json_binary, Addr, BankMsg, BlockInfo, CosmosMsg, Deps, DepsMut, StdError, StdResult,
-    Uint128, Uint256, WasmMsg,
+    coins, to_json_binary, Addr, BankMsg, BlockInfo, CosmosMsg, Decimal, Deps, DepsMut, StdError,
+    StdResult, Uint128, Uint256, WasmMsg,
 };
 use cw20::{Denom, Expiration};
 use cw_utils::Duration;
@@ -117,9 +117,9 @@ pub trait DurationExt {
     /// Returns true if the duration is 0 blocks or 0 seconds.
     fn is_zero(&self) -> bool;
 
-    /// Perform checked integer division between two durations, erroring if the
-    /// units do not match or denominator is 0.
-    fn checked_div(&self, denominator: &Self) -> Result<Uint128, ContractError>;
+    /// Returns the ratio between the two durations (numerator / denominator) as
+    /// a Decimal, erroring if the units do not match.
+    fn ratio(&self, denominator: &Self) -> Result<Decimal, ContractError>;
 }
 
 impl DurationExt for Duration {
@@ -130,13 +130,13 @@ impl DurationExt for Duration {
         }
     }
 
-    fn checked_div(&self, denominator: &Self) -> Result<Uint128, ContractError> {
+    fn ratio(&self, denominator: &Self) -> Result<Decimal, ContractError> {
         match (self, denominator) {
             (Duration::Height(numerator), Duration::Height(denominator)) => {
-                Ok(Uint128::from(*numerator).checked_div(Uint128::from(*denominator))?)
+                Ok(Decimal::checked_from_ratio(*numerator, *denominator)?)
             }
             (Duration::Time(numerator), Duration::Time(denominator)) => {
-                Ok(Uint128::from(*numerator).checked_div(Uint128::from(*denominator))?)
+                Ok(Decimal::checked_from_ratio(*numerator, *denominator)?)
             }
             _ => Err(ContractError::Std(StdError::generic_err(format!(
                 "incompatible durations: got numerator {:?} and denominator {:?}",

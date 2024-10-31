@@ -36,5 +36,7 @@ cw-utils-v1 = { workspace = true }
 cw-orch = { workspace = true }
 
 [dev-dependencies]
+cw20-stake = { workspace = true }
 cw-multi-test = { workspace = true }
 anyhow = { workspace = true }
+dao-testing = { workspace = true }

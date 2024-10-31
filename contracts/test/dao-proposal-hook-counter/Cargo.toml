@@ -35,3 +35,4 @@ dao-interface = { workspace = true }
 dao-dao-core = { workspace = true }
 dao-proposal-single = { workspace = true }
 cw-multi-test = { workspace = true }
+dao-testing = { workspace = true }

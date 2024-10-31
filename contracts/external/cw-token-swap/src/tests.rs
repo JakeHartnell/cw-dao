@@ -1,9 +1,10 @@
 use cosmwasm_std::{
     testing::{mock_dependencies, mock_env},
-    to_json_binary, Addr, Coin, Empty, Uint128,
+    to_json_binary, Addr, Coin, Uint128,
 };
 use cw20::Cw20Coin;
-use cw_multi_test::{App, BankSudo, Contract, ContractWrapper, Executor, SudoMsg};
+use cw_multi_test::{App, BankSudo, Executor, SudoMsg};
+use dao_testing::contracts::{cw20_base_contract, cw_token_swap_contract};
 
 use crate::{
     contract::{migrate, CONTRACT_NAME, CONTRACT_VERSION},
@@ -11,36 +12,18 @@ use crate::{
         Counterparty, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, StatusResponse, TokenInfo,
     },
     state::{CheckedCounterparty, CheckedTokenInfo},
-    ContractError,
 };
+use cw_token_swap::ContractError;
 
 const DAO1: &str = "dao1";
 const DAO2: &str = "dao2";
-
-fn escrow_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        crate::contract::execute,
-        crate::contract::instantiate,
-        crate::contract::query,
-    );
-    Box::new(contract)
-}
-
-fn cw20_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        cw20_base::contract::execute,
-        cw20_base::contract::instantiate,
-        cw20_base::contract::query,
-    );
-    Box::new(contract)
-}
 
 #[test]
 fn test_simple_escrow() {
     let mut app = App::default();
 
-    let cw20_code = app.store_code(cw20_contract());
-    let escrow_code = app.store_code(escrow_contract());
+    let cw20_code = app.store_code(cw20_base_contract());
+    let escrow_code = app.store_code(cw_token_swap_contract());
 
     let cw20 = app
         .instantiate_contract(
@@ -140,8 +123,8 @@ fn test_simple_escrow() {
 fn test_withdraw() {
     let mut app = App::default();
 
-    let cw20_code = app.store_code(cw20_contract());
-    let escrow_code = app.store_code(escrow_contract());
+    let cw20_code = app.store_code(cw20_base_contract());
+    let escrow_code = app.store_code(cw_token_swap_contract());
 
     let cw20 = app
         .instantiate_contract(
@@ -324,8 +307,8 @@ fn test_withdraw() {
 fn test_withdraw_post_completion() {
     let mut app = App::default();
 
-    let cw20_code = app.store_code(cw20_contract());
-    let escrow_code = app.store_code(escrow_contract());
+    let cw20_code = app.store_code(cw20_base_contract());
+    let escrow_code = app.store_code(cw_token_swap_contract());
 
     let cw20 = app
         .instantiate_contract(
@@ -432,8 +415,8 @@ fn test_withdraw_post_completion() {
 fn test_invalid_instantiate() {
     let mut app = App::default();
 
-    let cw20_code = app.store_code(cw20_contract());
-    let escrow_code = app.store_code(escrow_contract());
+    let cw20_code = app.store_code(cw20_base_contract());
+    let escrow_code = app.store_code(cw_token_swap_contract());
 
     let cw20 = app
         .instantiate_contract(
@@ -523,7 +506,7 @@ fn test_invalid_instantiate() {
 fn test_non_distincy_counterparties() {
     let mut app = App::default();
 
-    let escrow_code = app.store_code(escrow_contract());
+    let escrow_code = app.store_code(cw_token_swap_contract());
 
     // Zero amount not allowed for native tokens.
     let err: ContractError = app
@@ -561,8 +544,8 @@ fn test_non_distincy_counterparties() {
 fn test_fund_non_counterparty() {
     let mut app = App::default();
 
-    let cw20_code = app.store_code(cw20_contract());
-    let escrow_code = app.store_code(escrow_contract());
+    let cw20_code = app.store_code(cw20_base_contract());
+    let escrow_code = app.store_code(cw_token_swap_contract());
 
     let cw20 = app
         .instantiate_contract(
@@ -658,8 +641,8 @@ fn test_fund_non_counterparty() {
 fn test_fund_twice() {
     let mut app = App::default();
 
-    let cw20_code = app.store_code(cw20_contract());
-    let escrow_code = app.store_code(escrow_contract());
+    let cw20_code = app.store_code(cw20_base_contract());
+    let escrow_code = app.store_code(cw_token_swap_contract());
 
     let cw20 = app
         .instantiate_contract(
@@ -778,8 +761,8 @@ fn test_fund_twice() {
 fn test_fund_invalid_amount() {
     let mut app = App::default();
 
-    let cw20_code = app.store_code(cw20_contract());
-    let escrow_code = app.store_code(escrow_contract());
+    let cw20_code = app.store_code(cw20_base_contract());
+    let escrow_code = app.store_code(cw_token_swap_contract());
 
     let cw20 = app
         .instantiate_contract(
@@ -883,7 +866,7 @@ fn test_fund_invalid_amount() {
 fn test_fund_invalid_denom() {
     let mut app = App::default();
 
-    let escrow_code = app.store_code(escrow_contract());
+    let escrow_code = app.store_code(cw_token_swap_contract());
 
     let escrow = app
         .instantiate_contract(
@@ -943,8 +926,8 @@ fn test_fund_invalid_denom() {
 fn test_fund_invalid_cw20() {
     let mut app = App::default();
 
-    let escrow_code = app.store_code(escrow_contract());
-    let cw20_code = app.store_code(cw20_contract());
+    let escrow_code = app.store_code(cw_token_swap_contract());
+    let cw20_code = app.store_code(cw20_base_contract());
 
     let cw20 = app
         .instantiate_contract(

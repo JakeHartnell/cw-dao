@@ -3,7 +3,7 @@ use cw_multi_test::App;
 use dao_interface::state::{ProposalModule, ProposalModuleStatus};
 
 use cw_hooks::HooksResponse;
-use dao_pre_propose_single as cppbps;
+use dao_pre_propose_single as dpps;
 use dao_voting::pre_propose::ProposalCreationPolicy;
 
 use crate::{
@@ -15,7 +15,7 @@ use crate::{
 pub(crate) fn query_deposit_config_and_pre_propose_module(
     app: &App,
     proposal_single: &Addr,
-) -> (cppbps::Config, Addr) {
+) -> (dpps::Config, Addr) {
     let proposal_creation_policy = query_creation_policy(app, proposal_single);
 
     if let ProposalCreationPolicy::Module { addr: module_addr } = proposal_creation_policy {
@@ -118,9 +118,9 @@ pub(crate) fn query_list_proposals_reverse(
         .unwrap()
 }
 
-pub(crate) fn query_pre_proposal_single_config(app: &App, pre_propose: &Addr) -> cppbps::Config {
+pub(crate) fn query_pre_proposal_single_config(app: &App, pre_propose: &Addr) -> dpps::Config {
     app.wrap()
-        .query_wasm_smart(pre_propose, &cppbps::QueryMsg::Config {})
+        .query_wasm_smart(pre_propose, &dpps::QueryMsg::Config {})
         .unwrap()
 }
 
@@ -128,9 +128,9 @@ pub(crate) fn query_pre_proposal_single_deposit_info(
     app: &App,
     pre_propose: &Addr,
     proposal_id: u64,
-) -> cppbps::DepositInfoResponse {
+) -> dpps::DepositInfoResponse {
     app.wrap()
-        .query_wasm_smart(pre_propose, &cppbps::QueryMsg::DepositInfo { proposal_id })
+        .query_wasm_smart(pre_propose, &dpps::QueryMsg::DepositInfo { proposal_id })
         .unwrap()
 }
 

@@ -37,6 +37,7 @@ cw-proposal-single-v1 = { workspace = true, features = ["library"] }
 cw-orch = { workspace = true }
 
 [dev-dependencies]
+dao-proposal-single = { workspace = true }
 anyhow = { workspace = true }
 cosmwasm-schema = { workspace = true }
 cw-multi-test = { workspace = true }

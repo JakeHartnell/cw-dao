@@ -31,3 +31,4 @@ cw-orch = { workspace = true }
 
 [dev-dependencies]
 cw-multi-test = { workspace = true }
+dao-testing = { workspace = true }

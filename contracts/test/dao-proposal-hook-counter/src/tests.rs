@@ -1,10 +1,13 @@
-use cosmwasm_std::{to_json_binary, Addr, Empty, Uint128};
+use cosmwasm_std::{to_json_binary, Addr, Uint128};
 use cw20::Cw20Coin;
 use cw_hooks::HooksResponse;
-use cw_multi_test::{App, Contract, ContractWrapper, Executor};
+use cw_multi_test::{App, Executor};
 use dao_interface::state::ProposalModule;
 use dao_interface::state::{Admin, ModuleInstantiateInfo};
-
+use dao_testing::contracts::{
+    cw20_base_contract, dao_dao_core_contract, dao_proposal_hook_counter_contract,
+    dao_proposal_single_contract, dao_voting_cw20_balance_contract,
+};
 use dao_voting::{
     pre_propose::PreProposeInfo,
     threshold::{PercentageThreshold, Threshold},
@@ -16,54 +19,6 @@ use dao_proposal_single::state::Config;
 use dao_voting::proposal::SingleChoiceProposeMsg as ProposeMsg;
 
 const CREATOR_ADDR: &str = "creator";
-
-fn cw20_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        cw20_base::contract::execute,
-        cw20_base::contract::instantiate,
-        cw20_base::contract::query,
-    );
-    Box::new(contract)
-}
-
-fn single_govmod_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        dao_proposal_single::contract::execute,
-        dao_proposal_single::contract::instantiate,
-        dao_proposal_single::contract::query,
-    )
-    .with_reply(dao_proposal_single::contract::reply);
-    Box::new(contract)
-}
-
-fn cw20_balances_voting() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        dao_voting_cw20_balance::contract::execute,
-        dao_voting_cw20_balance::contract::instantiate,
-        dao_voting_cw20_balance::contract::query,
-    )
-    .with_reply(dao_voting_cw20_balance::contract::reply);
-    Box::new(contract)
-}
-
-fn cw_gov_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        dao_dao_core::contract::execute,
-        dao_dao_core::contract::instantiate,
-        dao_dao_core::contract::query,
-    )
-    .with_reply(dao_dao_core::contract::reply);
-    Box::new(contract)
-}
-
-fn counters_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        crate::contract::execute,
-        crate::contract::instantiate,
-        crate::contract::query,
-    );
-    Box::new(contract)
-}
 
 fn instantiate_governance(
     app: &mut App,
@@ -87,9 +42,9 @@ fn instantiate_with_default_governance(
     msg: dao_proposal_single::msg::InstantiateMsg,
     initial_balances: Option<Vec<Cw20Coin>>,
 ) -> Addr {
-    let cw20_id = app.store_code(cw20_contract());
-    let governance_id = app.store_code(cw_gov_contract());
-    let votemod_id = app.store_code(cw20_balances_voting());
+    let cw20_id = app.store_code(cw20_base_contract());
+    let governance_id = app.store_code(dao_dao_core_contract());
+    let votemod_id = app.store_code(dao_voting_cw20_balance_contract());
 
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
@@ -140,8 +95,8 @@ fn instantiate_with_default_governance(
 #[test]
 fn test_counters() {
     let mut app = App::default();
-    let govmod_id = app.store_code(single_govmod_contract());
-    let counters_id = app.store_code(counters_contract());
+    let govmod_id = app.store_code(dao_proposal_single_contract());
+    let counters_id = app.store_code(dao_proposal_hook_counter_contract());
 
     let threshold = Threshold::AbsolutePercentage {
         percentage: PercentageThreshold::Majority {},

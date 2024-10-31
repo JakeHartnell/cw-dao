@@ -41,12 +41,13 @@ cw-core-v1                    = { workspace = true, features = ["library"] }
 cw-proposal-single-v1         = { workspace = true, features = ["library"] }
 cw20-staked-balance-voting-v1 = { workspace = true, features = ["library"] }
 cw20-stake-v1                 = { workspace = true, features = ["library"] }
-cw-core-interface-v1          = { package = "cw-core-interface", version = "0.1.0", git = "https://github.com/DA0-DA0/dao-contracts.git", tag = "v1.0.0" }
-cw4-voting-v1                 = { package = "cw4-voting", version = "0.1.0", git = "https://github.com/DA0-DA0/dao-contracts.git", tag = "v1.0.0" }
-cw20-v1                       = { version = "0.13", package = "cw20" }
-cw4-v1                        = { version = "0.13", package = "cw4" }
+cw-core-interface-v1          = { workspace = true }
+cw4-voting-v1                 = { workspace = true }
+cw20-v1                       = { workspace = true }
+cw4-v1                        = { workspace = true }
 
 [dev-dependencies]
+dao-migrator    = { workspace = true }
 cosmwasm-schema = { workspace = true }
 cw-multi-test   = { workspace = true }
 dao-testing     = { workspace = true }

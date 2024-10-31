@@ -3,25 +3,14 @@ mod bitsong_stargate;
 mod tests;
 
 use app::BitsongApp;
-use cosmwasm_std::{Addr, Empty};
-use cw_multi_test::{Contract, ContractWrapper, Executor};
-use dao_testing::contracts::native_staked_balances_voting_contract;
+use cosmwasm_std::Addr;
+use cw_multi_test::Executor;
+use dao_testing::contracts::{btsg_ft_factory_contract, dao_voting_token_staked_contract};
 
 use crate::msg::InstantiateMsg;
 
 /// Address used to stake stuff.
 pub(crate) const STAKER: &str = "staker";
-
-pub(crate) fn btsg_ft_factory_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        crate::contract::execute,
-        crate::contract::instantiate,
-        crate::contract::query,
-    )
-    .with_reply(crate::contract::reply)
-    .with_migrate(crate::contract::migrate);
-    Box::new(contract)
-}
 
 pub(crate) struct CommonTest {
     app: BitsongApp,
@@ -32,7 +21,7 @@ pub(crate) struct CommonTest {
 pub(crate) fn setup_test() -> CommonTest {
     let mut app = BitsongApp::new();
     let factory_id = app.store_code(btsg_ft_factory_contract());
-    let module_id = app.store_code(native_staked_balances_voting_contract());
+    let module_id = app.store_code(dao_voting_token_staked_contract());
 
     let factory = app
         .instantiate_contract(

@@ -5,15 +5,16 @@ use crate::msg::{
 };
 use crate::state::Config;
 use cosmwasm_std::testing::{mock_dependencies, mock_env};
-use cosmwasm_std::{coins, Addr, Coin, Decimal, Empty, Uint128};
+use cosmwasm_std::{coins, Addr, Coin, Decimal, Uint128};
 use cw_controllers::ClaimsResponse;
-use cw_multi_test::{
-    next_block, App, AppResponse, BankSudo, Contract, ContractWrapper, Executor, SudoMsg,
-};
+use cw_multi_test::{next_block, App, AppResponse, BankSudo, Executor, SudoMsg};
 use cw_utils::Duration;
 use dao_interface::voting::{
     DenomResponse, InfoResponse, IsActiveResponse, TotalPowerAtHeightResponse,
     VotingPowerAtHeightResponse,
+};
+use dao_testing::contracts::{
+    dao_proposal_hook_counter_contract, dao_voting_token_staked_contract,
 };
 use dao_voting::threshold::{ActiveThreshold, ActiveThresholdResponse};
 
@@ -23,26 +24,6 @@ const ADDR2: &str = "addr2";
 const DENOM: &str = "ujuno";
 const INVALID_DENOM: &str = "uinvalid";
 const ODD_DENOM: &str = "uodd";
-
-fn hook_counter_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        dao_proposal_hook_counter::contract::execute,
-        dao_proposal_hook_counter::contract::instantiate,
-        dao_proposal_hook_counter::contract::query,
-    );
-    Box::new(contract)
-}
-
-fn staking_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        crate::contract::execute,
-        crate::contract::instantiate,
-        crate::contract::query,
-    )
-    .with_reply(crate::contract::reply)
-    .with_migrate(crate::contract::migrate);
-    Box::new(contract)
-}
 
 fn mock_app() -> App {
     let mut app = App::default();
@@ -205,7 +186,7 @@ fn get_balance(app: &mut App, address: &str, denom: &str) -> Uint128 {
 fn test_instantiate_existing() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     // Populated fields
     instantiate_staking(
         &mut app,
@@ -249,7 +230,7 @@ fn test_instantiate_existing() {
 fn test_instantiate_invalid_unstaking_duration_height() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
 
     // Populated fields
     instantiate_staking(
@@ -272,7 +253,7 @@ fn test_instantiate_invalid_unstaking_duration_height() {
 fn test_instantiate_invalid_unstaking_duration_time() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
 
     // Populated fields with height
     instantiate_staking(
@@ -295,7 +276,7 @@ fn test_instantiate_invalid_unstaking_duration_time() {
 fn test_stake_invalid_denom() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     let addr = instantiate_staking(
         &mut app,
         staking_id,
@@ -316,7 +297,7 @@ fn test_stake_invalid_denom() {
 fn test_stake_valid_denom() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     let addr = instantiate_staking(
         &mut app,
         staking_id,
@@ -339,7 +320,7 @@ fn test_stake_valid_denom() {
 fn test_unstake_none_staked() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     let addr = instantiate_staking(
         &mut app,
         staking_id,
@@ -360,7 +341,7 @@ fn test_unstake_none_staked() {
 fn test_unstake_zero_tokens() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     let addr = instantiate_staking(
         &mut app,
         staking_id,
@@ -381,7 +362,7 @@ fn test_unstake_zero_tokens() {
 fn test_unstake_invalid_balance() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     let addr = instantiate_staking(
         &mut app,
         staking_id,
@@ -406,7 +387,7 @@ fn test_unstake_invalid_balance() {
 fn test_unstake() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     let addr = instantiate_staking(
         &mut app,
         staking_id,
@@ -443,7 +424,7 @@ fn test_unstake() {
 fn test_unstake_no_unstaking_duration() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     let addr = instantiate_staking(
         &mut app,
         staking_id,
@@ -482,7 +463,7 @@ fn test_unstake_no_unstaking_duration() {
 fn test_claim_no_claims() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     let addr = instantiate_staking(
         &mut app,
         staking_id,
@@ -503,7 +484,7 @@ fn test_claim_no_claims() {
 fn test_claim_claim_not_reached() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     let addr = instantiate_staking(
         &mut app,
         staking_id,
@@ -532,7 +513,7 @@ fn test_claim_claim_not_reached() {
 fn test_claim() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     let addr = instantiate_staking(
         &mut app,
         staking_id,
@@ -585,7 +566,7 @@ fn test_claim() {
 fn test_update_config_invalid_sender() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     let addr = instantiate_staking(
         &mut app,
         staking_id,
@@ -606,7 +587,7 @@ fn test_update_config_invalid_sender() {
 fn test_update_config_as_owner() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     let addr = instantiate_staking(
         &mut app,
         staking_id,
@@ -636,7 +617,7 @@ fn test_update_config_as_owner() {
 fn test_update_config_invalid_duration() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     let addr = instantiate_staking(
         &mut app,
         staking_id,
@@ -657,7 +638,7 @@ fn test_update_config_invalid_duration() {
 fn test_query_dao() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     let addr = instantiate_staking(
         &mut app,
         staking_id,
@@ -679,7 +660,7 @@ fn test_query_dao() {
 fn test_query_info() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     let addr = instantiate_staking(
         &mut app,
         staking_id,
@@ -701,7 +682,7 @@ fn test_query_info() {
 fn test_query_claims() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     let addr = instantiate_staking(
         &mut app,
         staking_id,
@@ -739,7 +720,7 @@ fn test_query_claims() {
 fn test_query_get_config() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     let addr = instantiate_staking(
         &mut app,
         staking_id,
@@ -765,7 +746,7 @@ fn test_query_get_config() {
 fn test_voting_power_queries() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     let addr = instantiate_staking(
         &mut app,
         staking_id,
@@ -873,7 +854,7 @@ fn test_voting_power_queries() {
 fn test_query_list_stakers() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     let addr = instantiate_staking(
         &mut app,
         staking_id,
@@ -960,7 +941,7 @@ fn test_query_list_stakers() {
 fn test_instantiate_zero_active_threshold_count() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     instantiate_staking(
         &mut app,
         staking_id,
@@ -980,7 +961,7 @@ fn test_instantiate_zero_active_threshold_count() {
 fn test_active_threshold_absolute_count() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
 
     let addr = instantiate_staking(
         &mut app,
@@ -1019,7 +1000,7 @@ fn test_active_threshold_absolute_count() {
 fn test_active_threshold_percent() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     let addr = instantiate_staking(
         &mut app,
         staking_id,
@@ -1057,7 +1038,7 @@ fn test_active_threshold_percent() {
 fn test_active_threshold_percent_rounds_up() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     let addr = instantiate_staking(
         &mut app,
         staking_id,
@@ -1104,7 +1085,7 @@ fn test_active_threshold_percent_rounds_up() {
 fn test_active_threshold_none() {
     let mut app = App::default();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     let addr = instantiate_staking(
         &mut app,
         staking_id,
@@ -1129,7 +1110,7 @@ fn test_active_threshold_none() {
 fn test_update_active_threshold() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     let addr = instantiate_staking(
         &mut app,
         staking_id,
@@ -1181,7 +1162,7 @@ fn test_update_active_threshold() {
 fn test_active_threshold_percentage_gt_100() {
     let mut app = App::default();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     instantiate_staking(
         &mut app,
         staking_id,
@@ -1204,7 +1185,7 @@ fn test_active_threshold_percentage_gt_100() {
 fn test_active_threshold_percentage_lte_0() {
     let mut app = App::default();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     instantiate_staking(
         &mut app,
         staking_id,
@@ -1225,7 +1206,7 @@ fn test_active_threshold_percentage_lte_0() {
 fn test_active_threshold_absolute_count_invalid() {
     let mut app = App::default();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
     instantiate_staking(
         &mut app,
         staking_id,
@@ -1245,7 +1226,7 @@ fn test_active_threshold_absolute_count_invalid() {
 fn test_add_remove_hooks() {
     let mut app = App::default();
 
-    let staking_id = app.store_code(staking_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
 
     let addr = instantiate_staking(
         &mut app,
@@ -1307,8 +1288,8 @@ fn test_add_remove_hooks() {
 fn test_staking_hooks() {
     let mut app = mock_app();
 
-    let staking_id = app.store_code(staking_contract());
-    let hook_id = app.store_code(hook_counter_contract());
+    let staking_id = app.store_code(dao_voting_token_staked_contract());
+    let hook_id = app.store_code(dao_proposal_hook_counter_contract());
 
     let hook = app
         .instantiate_contract(

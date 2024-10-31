@@ -34,5 +34,7 @@ cw20-013 = { package = "cw20", version = "0.13" }
 cw-orch = { workspace = true }
 
 [dev-dependencies]
+cw20-stake-external-rewards = { workspace = true }
 cw-multi-test = { workspace = true }
 anyhow = { workspace = true }
+dao-testing = { workspace = true }

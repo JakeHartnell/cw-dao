@@ -1,11 +1,14 @@
 use cosmwasm_std::{
     testing::{mock_dependencies, mock_env},
-    to_json_binary, Addr, CosmosMsg, Decimal, Empty, Uint128, WasmMsg,
+    to_json_binary, Addr, CosmosMsg, Decimal, Uint128, WasmMsg,
 };
 use cw2::ContractVersion;
 use cw20::{BalanceResponse, Cw20Coin, MinterResponse, TokenInfoResponse};
-use cw_multi_test::{next_block, App, Contract, ContractWrapper, Executor};
+use cw_multi_test::{next_block, App, Executor};
 use dao_interface::voting::{InfoResponse, IsActiveResponse, VotingPowerAtHeightResponse};
+use dao_testing::contracts::{
+    cw20_base_contract, cw20_stake_contract, dao_voting_cw20_staked_contract,
+};
 use dao_voting::threshold::{ActiveThreshold, ActiveThresholdResponse};
 
 use crate::{
@@ -15,35 +18,6 @@ use crate::{
 
 const DAO_ADDR: &str = "dao";
 const CREATOR_ADDR: &str = "creator";
-
-fn cw20_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        cw20_base::contract::execute,
-        cw20_base::contract::instantiate,
-        cw20_base::contract::query,
-    );
-    Box::new(contract)
-}
-
-fn staking_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        cw20_stake::contract::execute,
-        cw20_stake::contract::instantiate,
-        cw20_stake::contract::query,
-    );
-    Box::new(contract)
-}
-
-fn staked_balance_voting_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        crate::contract::execute,
-        crate::contract::instantiate,
-        crate::contract::query,
-    )
-    .with_reply(crate::contract::reply)
-    .with_migrate(crate::contract::migrate);
-    Box::new(contract)
-}
 
 fn instantiate_voting(app: &mut App, voting_id: u64, msg: InstantiateMsg) -> Addr {
     app.instantiate_contract(
@@ -71,9 +45,9 @@ fn stake_tokens(app: &mut App, staking_addr: Addr, cw20_addr: Addr, sender: &str
 #[should_panic(expected = "Initial governance token balances must not be empty")]
 fn test_instantiate_zero_supply() {
     let mut app = App::default();
-    let cw20_id = app.store_code(cw20_contract());
-    let voting_id = app.store_code(staked_balance_voting_contract());
-    let staking_contract_id = app.store_code(staking_contract());
+    let cw20_id = app.store_code(cw20_base_contract());
+    let voting_id = app.store_code(dao_voting_cw20_staked_contract());
+    let staking_contract_id = app.store_code(cw20_stake_contract());
     instantiate_voting(
         &mut app,
         voting_id,
@@ -102,9 +76,9 @@ fn test_instantiate_zero_supply() {
 #[should_panic(expected = "Initial governance token balances must not be empty")]
 fn test_instantiate_no_balances() {
     let mut app = App::default();
-    let cw20_id = app.store_code(cw20_contract());
-    let voting_id = app.store_code(staked_balance_voting_contract());
-    let staking_contract_id = app.store_code(staking_contract());
+    let cw20_id = app.store_code(cw20_base_contract());
+    let voting_id = app.store_code(dao_voting_cw20_staked_contract());
+    let staking_contract_id = app.store_code(cw20_stake_contract());
     instantiate_voting(
         &mut app,
         voting_id,
@@ -130,9 +104,9 @@ fn test_instantiate_no_balances() {
 #[should_panic(expected = "Active threshold count must be greater than zero")]
 fn test_instantiate_zero_active_threshold_count() {
     let mut app = App::default();
-    let cw20_id = app.store_code(cw20_contract());
-    let voting_id = app.store_code(staked_balance_voting_contract());
-    let staking_contract_id = app.store_code(staking_contract());
+    let cw20_id = app.store_code(cw20_base_contract());
+    let voting_id = app.store_code(dao_voting_cw20_staked_contract());
+    let staking_contract_id = app.store_code(cw20_stake_contract());
     instantiate_voting(
         &mut app,
         voting_id,
@@ -162,9 +136,9 @@ fn test_instantiate_zero_active_threshold_count() {
 #[test]
 fn test_contract_info() {
     let mut app = App::default();
-    let cw20_id = app.store_code(cw20_contract());
-    let voting_id = app.store_code(staked_balance_voting_contract());
-    let staking_contract_id = app.store_code(staking_contract());
+    let cw20_id = app.store_code(cw20_base_contract());
+    let voting_id = app.store_code(dao_voting_cw20_staked_contract());
+    let staking_contract_id = app.store_code(cw20_stake_contract());
 
     let voting_addr = instantiate_voting(
         &mut app,
@@ -213,9 +187,9 @@ fn test_contract_info() {
 #[test]
 fn test_new_cw20() {
     let mut app = App::default();
-    let cw20_id = app.store_code(cw20_contract());
-    let voting_id = app.store_code(staked_balance_voting_contract());
-    let staking_contract_id = app.store_code(staking_contract());
+    let cw20_id = app.store_code(cw20_base_contract());
+    let voting_id = app.store_code(dao_voting_cw20_staked_contract());
+    let staking_contract_id = app.store_code(cw20_stake_contract());
 
     let voting_addr = instantiate_voting(
         &mut app,
@@ -374,9 +348,9 @@ fn test_new_cw20() {
 #[test]
 fn test_existing_cw20_new_staking() {
     let mut app = App::default();
-    let cw20_id = app.store_code(cw20_contract());
-    let voting_id = app.store_code(staked_balance_voting_contract());
-    let staking_id = app.store_code(staking_contract());
+    let cw20_id = app.store_code(cw20_base_contract());
+    let voting_id = app.store_code(dao_voting_cw20_staked_contract());
+    let staking_id = app.store_code(cw20_stake_contract());
 
     let token_addr = app
         .instantiate_contract(
@@ -525,9 +499,9 @@ fn test_existing_cw20_new_staking() {
 #[test]
 fn test_existing_cw20_existing_staking() {
     let mut app = App::default();
-    let cw20_id = app.store_code(cw20_contract());
-    let voting_id = app.store_code(staked_balance_voting_contract());
-    let staking_id = app.store_code(staking_contract());
+    let cw20_id = app.store_code(cw20_base_contract());
+    let voting_id = app.store_code(dao_voting_cw20_staked_contract());
+    let staking_id = app.store_code(cw20_stake_contract());
 
     let token_addr = app
         .instantiate_contract(
@@ -726,9 +700,9 @@ fn test_existing_cw20_existing_staking() {
 #[test]
 fn test_different_heights() {
     let mut app = App::default();
-    let cw20_id = app.store_code(cw20_contract());
-    let voting_id = app.store_code(staked_balance_voting_contract());
-    let staking_id = app.store_code(staking_contract());
+    let cw20_id = app.store_code(cw20_base_contract());
+    let voting_id = app.store_code(dao_voting_cw20_staked_contract());
+    let staking_id = app.store_code(cw20_stake_contract());
 
     let token_addr = app
         .instantiate_contract(
@@ -926,9 +900,9 @@ fn test_different_heights() {
 #[test]
 fn test_active_threshold_absolute_count() {
     let mut app = App::default();
-    let cw20_id = app.store_code(cw20_contract());
-    let voting_id = app.store_code(staked_balance_voting_contract());
-    let staking_contract_id = app.store_code(staking_contract());
+    let cw20_id = app.store_code(cw20_base_contract());
+    let voting_id = app.store_code(dao_voting_cw20_staked_contract());
+    let staking_contract_id = app.store_code(cw20_stake_contract());
 
     let voting_addr = instantiate_voting(
         &mut app,
@@ -986,9 +960,9 @@ fn test_active_threshold_absolute_count() {
 #[test]
 fn test_active_threshold_percent() {
     let mut app = App::default();
-    let cw20_id = app.store_code(cw20_contract());
-    let voting_id = app.store_code(staked_balance_voting_contract());
-    let staking_contract_id = app.store_code(staking_contract());
+    let cw20_id = app.store_code(cw20_base_contract());
+    let voting_id = app.store_code(dao_voting_cw20_staked_contract());
+    let staking_contract_id = app.store_code(cw20_stake_contract());
 
     let voting_addr = instantiate_voting(
         &mut app,
@@ -1046,9 +1020,9 @@ fn test_active_threshold_percent() {
 #[test]
 fn test_active_threshold_percent_rounds_up() {
     let mut app = App::default();
-    let cw20_id = app.store_code(cw20_contract());
-    let voting_id = app.store_code(staked_balance_voting_contract());
-    let staking_contract_id = app.store_code(staking_contract());
+    let cw20_id = app.store_code(cw20_base_contract());
+    let voting_id = app.store_code(dao_voting_cw20_staked_contract());
+    let staking_contract_id = app.store_code(cw20_stake_contract());
 
     let voting_addr = instantiate_voting(
         &mut app,
@@ -1121,9 +1095,9 @@ fn test_active_threshold_percent_rounds_up() {
 #[test]
 fn test_active_threshold_none() {
     let mut app = App::default();
-    let cw20_id = app.store_code(cw20_contract());
-    let voting_id = app.store_code(staked_balance_voting_contract());
-    let staking_contract_id = app.store_code(staking_contract());
+    let cw20_id = app.store_code(cw20_base_contract());
+    let voting_id = app.store_code(dao_voting_cw20_staked_contract());
+    let staking_contract_id = app.store_code(cw20_stake_contract());
 
     let voting_addr = instantiate_voting(
         &mut app,
@@ -1159,9 +1133,9 @@ fn test_active_threshold_none() {
 #[test]
 fn test_update_active_threshold() {
     let mut app = App::default();
-    let cw20_id = app.store_code(cw20_contract());
-    let voting_id = app.store_code(staked_balance_voting_contract());
-    let staking_contract_id = app.store_code(staking_contract());
+    let cw20_id = app.store_code(cw20_base_contract());
+    let voting_id = app.store_code(dao_voting_cw20_staked_contract());
+    let staking_contract_id = app.store_code(cw20_stake_contract());
 
     let voting_addr = instantiate_voting(
         &mut app,
@@ -1227,9 +1201,9 @@ fn test_update_active_threshold() {
 #[should_panic(expected = "Active threshold percentage must be greater than 0 and less than 1")]
 fn test_active_threshold_percentage_gt_100() {
     let mut app = App::default();
-    let cw20_id = app.store_code(cw20_contract());
-    let voting_id = app.store_code(staked_balance_voting_contract());
-    let staking_contract_id = app.store_code(staking_contract());
+    let cw20_id = app.store_code(cw20_base_contract());
+    let voting_id = app.store_code(dao_voting_cw20_staked_contract());
+    let staking_contract_id = app.store_code(cw20_stake_contract());
 
     instantiate_voting(
         &mut app,
@@ -1261,9 +1235,9 @@ fn test_active_threshold_percentage_gt_100() {
 #[should_panic(expected = "Active threshold percentage must be greater than 0 and less than 1")]
 fn test_active_threshold_percentage_lte_0() {
     let mut app = App::default();
-    let cw20_id = app.store_code(cw20_contract());
-    let voting_id = app.store_code(staked_balance_voting_contract());
-    let staking_contract_id = app.store_code(staking_contract());
+    let cw20_id = app.store_code(cw20_base_contract());
+    let voting_id = app.store_code(dao_voting_cw20_staked_contract());
+    let staking_contract_id = app.store_code(cw20_stake_contract());
 
     instantiate_voting(
         &mut app,
@@ -1295,9 +1269,9 @@ fn test_active_threshold_percentage_lte_0() {
 #[should_panic(expected = "Absolute count threshold cannot be greater than the total token supply")]
 fn test_active_threshold_absolute_count_invalid() {
     let mut app = App::default();
-    let cw20_id = app.store_code(cw20_contract());
-    let voting_id = app.store_code(staked_balance_voting_contract());
-    let staking_contract_id = app.store_code(staking_contract());
+    let cw20_id = app.store_code(cw20_base_contract());
+    let voting_id = app.store_code(dao_voting_cw20_staked_contract());
+    let staking_contract_id = app.store_code(cw20_stake_contract());
 
     instantiate_voting(
         &mut app,
@@ -1328,9 +1302,9 @@ fn test_active_threshold_absolute_count_invalid() {
 #[test]
 fn test_migrate() {
     let mut app = App::default();
-    let cw20_id = app.store_code(cw20_contract());
-    let voting_id = app.store_code(staked_balance_voting_contract());
-    let staking_contract_id = app.store_code(staking_contract());
+    let cw20_id = app.store_code(cw20_base_contract());
+    let voting_id = app.store_code(dao_voting_cw20_staked_contract());
+    let staking_contract_id = app.store_code(cw20_stake_contract());
 
     let voting_addr = app
         .instantiate_contract(

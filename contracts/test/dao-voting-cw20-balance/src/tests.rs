@@ -1,32 +1,14 @@
-use cosmwasm_std::{Addr, Empty, Uint128};
+use cosmwasm_std::{Addr, Uint128};
 use cw2::ContractVersion;
 use cw20::{Cw20Coin, MinterResponse, TokenInfoResponse};
-use cw_multi_test::{App, Contract, ContractWrapper, Executor};
+use cw_multi_test::{App, Executor};
 use dao_interface::voting::{InfoResponse, VotingPowerAtHeightResponse};
+use dao_testing::contracts::{cw20_base_contract, dao_voting_cw20_balance_contract};
 
 use crate::msg::{InstantiateMsg, QueryMsg};
 
 const DAO_ADDR: &str = "dao";
 const CREATOR_ADDR: &str = "creator";
-
-fn cw20_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        cw20_base::contract::execute,
-        cw20_base::contract::instantiate,
-        cw20_base::contract::query,
-    );
-    Box::new(contract)
-}
-
-fn balance_voting_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        crate::contract::execute,
-        crate::contract::instantiate,
-        crate::contract::query,
-    )
-    .with_reply(crate::contract::reply);
-    Box::new(contract)
-}
 
 fn instantiate_voting(app: &mut App, voting_id: u64, msg: InstantiateMsg) -> Addr {
     app.instantiate_contract(
@@ -44,8 +26,8 @@ fn instantiate_voting(app: &mut App, voting_id: u64, msg: InstantiateMsg) -> Add
 #[should_panic(expected = "Initial governance token balances must not be empty")]
 fn test_instantiate_zero_supply() {
     let mut app = App::default();
-    let cw20_id = app.store_code(cw20_contract());
-    let voting_id = app.store_code(balance_voting_contract());
+    let cw20_id = app.store_code(cw20_base_contract());
+    let voting_id = app.store_code(dao_voting_cw20_balance_contract());
     instantiate_voting(
         &mut app,
         voting_id,
@@ -70,8 +52,8 @@ fn test_instantiate_zero_supply() {
 #[should_panic(expected = "Initial governance token balances must not be empty")]
 fn test_instantiate_no_balances() {
     let mut app = App::default();
-    let cw20_id = app.store_code(cw20_contract());
-    let voting_id = app.store_code(balance_voting_contract());
+    let cw20_id = app.store_code(cw20_base_contract());
+    let voting_id = app.store_code(dao_voting_cw20_balance_contract());
     instantiate_voting(
         &mut app,
         voting_id,
@@ -92,8 +74,8 @@ fn test_instantiate_no_balances() {
 #[test]
 fn test_contract_info() {
     let mut app = App::default();
-    let cw20_id = app.store_code(cw20_contract());
-    let voting_id = app.store_code(balance_voting_contract());
+    let cw20_id = app.store_code(cw20_base_contract());
+    let voting_id = app.store_code(dao_voting_cw20_balance_contract());
 
     let voting_addr = instantiate_voting(
         &mut app,
@@ -132,8 +114,8 @@ fn test_contract_info() {
 #[test]
 fn test_new_cw20() {
     let mut app = App::default();
-    let cw20_id = app.store_code(cw20_contract());
-    let voting_id = app.store_code(balance_voting_contract());
+    let cw20_id = app.store_code(cw20_base_contract());
+    let voting_id = app.store_code(dao_voting_cw20_balance_contract());
 
     let voting_addr = instantiate_voting(
         &mut app,
@@ -257,8 +239,8 @@ fn test_new_cw20() {
 #[test]
 fn test_existing_cw20() {
     let mut app = App::default();
-    let cw20_id = app.store_code(cw20_contract());
-    let voting_id = app.store_code(balance_voting_contract());
+    let cw20_id = app.store_code(cw20_base_contract());
+    let voting_id = app.store_code(dao_voting_cw20_balance_contract());
 
     let token_addr = app
         .instantiate_contract(

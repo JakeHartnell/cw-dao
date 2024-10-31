@@ -4,7 +4,7 @@ use cosmwasm_std::{
 use cw20::Cw20Coin;
 use cw_denom::{CheckedDenom, UncheckedDenom};
 use cw_hooks::HooksResponse;
-use cw_multi_test::{next_block, App, BankSudo, Contract, ContractWrapper, Executor, SudoMsg};
+use cw_multi_test::{next_block, App, BankSudo, Executor, SudoMsg};
 use cw_utils::Duration;
 use dao_interface::state::ProposalModule;
 use dao_interface::state::{Admin, ModuleInstantiateInfo};
@@ -49,12 +49,15 @@ use crate::{
             query_proposal_config, query_proposal_hooks, query_vote_hooks,
         },
     },
-    ContractError,
 };
 use dao_pre_propose_multiple as cppm;
+use dao_proposal_multiple::ContractError;
 
 use dao_testing::{
-    contracts::{cw20_balances_voting_contract, cw20_base_contract},
+    contracts::{
+        cw20_base_contract, dao_pre_propose_multiple_contract, dao_proposal_multiple_contract,
+        dao_voting_cw20_balance_contract,
+    },
     ShouldExecute,
 };
 
@@ -72,31 +75,12 @@ pub struct TestMultipleChoiceVote {
     pub should_execute: ShouldExecute,
 }
 
-pub fn proposal_multiple_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        crate::contract::execute,
-        crate::contract::instantiate,
-        crate::contract::query,
-    )
-    .with_reply(crate::contract::reply);
-    Box::new(contract)
-}
-
-pub fn pre_propose_multiple_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        cppm::contract::execute,
-        cppm::contract::instantiate,
-        cppm::contract::query,
-    );
-    Box::new(contract)
-}
-
 pub fn get_pre_propose_info(
     app: &mut App,
     deposit_info: Option<UncheckedDepositInfo>,
     open_proposal_submission: bool,
 ) -> PreProposeInfo {
-    let pre_propose_contract = app.store_code(pre_propose_multiple_contract());
+    let pre_propose_contract = app.store_code(dao_pre_propose_multiple_contract());
 
     let submission_policy = if open_proposal_submission {
         PreProposeSubmissionPolicy::Anyone { denylist: vec![] }
@@ -127,7 +111,7 @@ pub fn get_pre_propose_info(
 #[test]
 fn test_propose() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
 
     let max_voting_period = Duration::Height(6);
     let quorum = PercentageThreshold::Majority {};
@@ -209,7 +193,7 @@ fn test_propose() {
 #[test]
 fn test_propose_wrong_num_choices() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
 
     let max_voting_period = cw_utils::Duration::Height(6);
     let quorum = PercentageThreshold::Majority {};
@@ -293,7 +277,7 @@ fn test_propose_wrong_num_choices() {
 #[test]
 fn test_proposal_count_initialized_to_zero() {
     let mut app = App::default();
-    let _proposal_id = app.store_code(proposal_multiple_contract());
+    let _proposal_id = app.store_code(dao_proposal_multiple_contract());
     let msg = InstantiateMsg {
         voting_strategy: VotingStrategy::SingleChoice {
             quorum: PercentageThreshold::Percent(Decimal::percent(10)),
@@ -328,7 +312,7 @@ fn test_proposal_count_initialized_to_zero() {
 #[test]
 fn test_propose_auto_vote_winner() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
 
     let max_voting_period = Duration::Height(6);
     let quorum = PercentageThreshold::Majority {};
@@ -419,7 +403,7 @@ fn test_propose_auto_vote_winner() {
 #[test]
 fn test_propose_auto_vote_reject() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
 
     let max_voting_period = Duration::Height(6);
     let quorum = PercentageThreshold::Majority {};
@@ -511,7 +495,7 @@ fn test_propose_auto_vote_reject() {
 #[should_panic(expected = "Not registered to vote (no voting power) at time of proposal creation")]
 fn test_propose_non_member_auto_vote_fail() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
 
     let max_voting_period = Duration::Height(6);
     let quorum = PercentageThreshold::Majority {};
@@ -577,7 +561,7 @@ fn test_propose_non_member_auto_vote_fail() {
 #[test]
 fn test_no_early_pass_with_min_duration() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
     let msg = InstantiateMsg {
         voting_strategy: VotingStrategy::SingleChoice {
             quorum: PercentageThreshold::Percent(Decimal::percent(10)),
@@ -673,7 +657,7 @@ fn test_no_early_pass_with_min_duration() {
 #[test]
 fn test_propose_with_messages() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
     let msg = InstantiateMsg {
         voting_strategy: VotingStrategy::SingleChoice {
             quorum: PercentageThreshold::Percent(Decimal::percent(10)),
@@ -795,7 +779,7 @@ fn test_propose_with_messages() {
 )]
 fn test_min_duration_units_missmatch() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
     let msg = InstantiateMsg {
         voting_strategy: VotingStrategy::SingleChoice {
             quorum: PercentageThreshold::Percent(Decimal::percent(10)),
@@ -828,7 +812,7 @@ fn test_min_duration_units_missmatch() {
 #[should_panic(expected = "Min voting period must be less than or equal to max voting period")]
 fn test_min_duration_larger_than_proposal_duration() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
     let msg = InstantiateMsg {
         voting_strategy: VotingStrategy::SingleChoice {
             quorum: PercentageThreshold::Percent(Decimal::percent(10)),
@@ -860,7 +844,7 @@ fn test_min_duration_larger_than_proposal_duration() {
 #[test]
 fn test_min_duration_same_as_proposal_duration() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
     let msg = InstantiateMsg {
         voting_strategy: VotingStrategy::SingleChoice {
             quorum: PercentageThreshold::Percent(Decimal::percent(10)),
@@ -971,7 +955,7 @@ fn test_min_duration_same_as_proposal_duration() {
 #[test]
 fn test_voting_module_token_proposal_deposit_instantiate() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
 
     let quorum = PercentageThreshold::Majority {};
     let voting_strategy = VotingStrategy::SingleChoice { quorum };
@@ -1030,7 +1014,7 @@ fn test_voting_module_token_proposal_deposit_instantiate() {
 #[test]
 fn test_different_token_proposal_deposit() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
     let cw20_id = app.store_code(cw20_base_contract());
     let cw20_addr = app
         .instantiate_contract(
@@ -1084,9 +1068,9 @@ fn test_different_token_proposal_deposit() {
 #[should_panic(expected = "Error parsing into type dao_voting_cw20_balance::msg::QueryMsg")]
 fn test_bad_token_proposal_deposit() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
     let cw20_id = app.store_code(cw20_base_contract());
-    let votemod_id = app.store_code(cw20_balances_voting_contract());
+    let votemod_id = app.store_code(dao_voting_cw20_balance_contract());
 
     let votemod_addr = app
         .instantiate_contract(
@@ -1142,7 +1126,7 @@ fn test_bad_token_proposal_deposit() {
 #[test]
 fn test_take_proposal_deposit() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
 
     let quorum = PercentageThreshold::Percent(Decimal::percent(10));
     let voting_strategy = VotingStrategy::SingleChoice { quorum };
@@ -1250,7 +1234,7 @@ fn test_take_proposal_deposit() {
 #[test]
 fn test_take_native_proposal_deposit() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
 
     let quorum = PercentageThreshold::Percent(Decimal::percent(10));
     let voting_strategy = VotingStrategy::SingleChoice { quorum };
@@ -1345,7 +1329,7 @@ fn test_take_native_proposal_deposit() {
 #[test]
 fn test_native_proposal_deposit() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
 
     let max_voting_period = cw_utils::Duration::Height(6);
     let instantiate = InstantiateMsg {
@@ -1777,7 +1761,7 @@ fn test_cant_vote_executed_or_closed() {
 #[test]
 fn test_cant_propose_zero_power() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
     let quorum = PercentageThreshold::Percent(Decimal::percent(10));
     let voting_strategy = VotingStrategy::SingleChoice { quorum };
     let max_voting_period = cw_utils::Duration::Height(6);
@@ -1953,7 +1937,7 @@ fn test_cant_vote_not_registered() {
 fn test_cant_execute_not_member() {
     // Create proposal with only_members_execute: true
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
 
     let max_voting_period = cw_utils::Duration::Height(6);
     let quorum = PercentageThreshold::Majority {};
@@ -2045,7 +2029,7 @@ fn test_cant_execute_not_member_when_proposal_created() {
     // Create proposal with only_members_execute: true and ensure member cannot
     // execute if they were not a member when the proposal was created
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
 
     let max_voting_period = cw_utils::Duration::Height(6);
     let quorum = PercentageThreshold::Majority {};
@@ -2164,7 +2148,7 @@ fn test_cant_execute_not_member_when_proposal_created() {
 #[test]
 fn test_open_proposal_submission() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
 
     let max_voting_period = cw_utils::Duration::Height(6);
 
@@ -2469,7 +2453,7 @@ fn test_deposit_return_on_close() {
 #[test]
 fn test_execute_expired_proposal() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
     let quorum = PercentageThreshold::Percent(Decimal::percent(10));
     let voting_strategy = VotingStrategy::SingleChoice { quorum };
     let max_voting_period = cw_utils::Duration::Height(6);
@@ -2768,7 +2752,7 @@ fn test_no_return_if_no_refunds() {
 #[test]
 fn test_query_list_proposals() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
     let quorum = PercentageThreshold::Majority {};
     let voting_strategy = VotingStrategy::SingleChoice { quorum };
     let max_voting_period = cw_utils::Duration::Height(6);
@@ -2904,7 +2888,7 @@ fn test_query_list_proposals() {
 #[test]
 fn test_hooks() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
 
     let quorum = PercentageThreshold::Majority {};
     let voting_strategy = VotingStrategy::SingleChoice { quorum };
@@ -3031,7 +3015,7 @@ fn test_hooks() {
 #[test]
 fn test_active_threshold_absolute() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
 
     let quorum = PercentageThreshold::Majority {};
     let voting_strategy = VotingStrategy::SingleChoice { quorum };
@@ -3163,7 +3147,7 @@ fn test_active_threshold_absolute() {
 #[test]
 fn test_active_threshold_percent() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
     let quorum = PercentageThreshold::Majority {};
     let voting_strategy = VotingStrategy::SingleChoice { quorum };
     let max_voting_period = cw_utils::Duration::Height(6);
@@ -3295,7 +3279,7 @@ fn test_active_threshold_percent() {
 #[test]
 fn test_active_threshold_none() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
     let quorum = PercentageThreshold::Majority {};
     let voting_strategy = VotingStrategy::SingleChoice { quorum };
     let max_voting_period = cw_utils::Duration::Height(6);
@@ -3407,7 +3391,7 @@ fn test_active_threshold_none() {
 #[test]
 fn test_revoting() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
     let core_addr = instantiate_with_staked_balances_governance(
         &mut app,
         InstantiateMsg {
@@ -3541,7 +3525,7 @@ fn test_revoting() {
 #[test]
 fn test_allow_revoting_config_changes() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
     let core_addr = instantiate_with_staked_balances_governance(
         &mut app,
         InstantiateMsg {
@@ -3696,7 +3680,7 @@ fn test_allow_revoting_config_changes() {
 #[test]
 fn test_revoting_same_vote_twice() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
     let core_addr = instantiate_with_staked_balances_governance(
         &mut app,
         InstantiateMsg {
@@ -3792,7 +3776,7 @@ fn test_revoting_same_vote_twice() {
 #[test]
 fn test_invalid_revote_does_not_invalidate_initial_vote() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
     let core_addr = instantiate_with_staked_balances_governance(
         &mut app,
         InstantiateMsg {
@@ -3987,7 +3971,7 @@ fn test_return_deposit_to_dao_on_proposal_failure() {
 #[test]
 fn test_close_failed_proposal() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
 
     let quorum = PercentageThreshold::Majority {};
     let voting_strategy = VotingStrategy::SingleChoice { quorum };
@@ -4228,7 +4212,7 @@ fn test_close_failed_proposal() {
 #[test]
 fn test_no_double_refund_on_execute_fail_and_close() {
     let mut app = App::default();
-    let _proposal_module_id = app.store_code(proposal_multiple_contract());
+    let _proposal_module_id = app.store_code(dao_proposal_multiple_contract());
 
     let voting_strategy = VotingStrategy::SingleChoice {
         quorum: PercentageThreshold::Majority {},
@@ -4424,7 +4408,7 @@ fn test_no_double_refund_on_execute_fail_and_close() {
 #[test]
 pub fn test_not_allow_voting_on_expired_proposal() {
     let mut app = App::default();
-    let _govmod_id = app.store_code(proposal_multiple_contract());
+    let _govmod_id = app.store_code(dao_proposal_multiple_contract());
     let instantiate = InstantiateMsg {
         max_voting_period: Duration::Height(6),
         only_members_execute: false,

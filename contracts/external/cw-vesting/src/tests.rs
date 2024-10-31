@@ -1,12 +1,10 @@
 use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-use cosmwasm_std::{coins, to_json_binary, Addr, Coin, Decimal, Empty, Uint128, Validator};
+use cosmwasm_std::{coins, to_json_binary, Addr, Coin, Decimal, Uint128, Validator};
 use cw20::{Cw20Coin, Cw20ExecuteMsg, Cw20ReceiveMsg};
 use cw_denom::{CheckedDenom, UncheckedDenom};
-use cw_multi_test::{
-    App, AppBuilder, BankSudo, Contract, ContractWrapper, Executor, StakingInfo, SudoMsg,
-};
+use cw_multi_test::{App, AppBuilder, BankSudo, Executor, StakingInfo, SudoMsg};
 use cw_ownable::Action;
-use dao_testing::contracts::cw20_base_contract;
+use dao_testing::contracts::{cw20_base_contract, cw_vesting_contract};
 
 use crate::contract::{execute, execute_receive_cw20};
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, ReceiveMsg};
@@ -20,15 +18,6 @@ const INITIAL_BALANCE: u128 = 1000000000;
 const TOTAL_VEST: u128 = 1000000;
 const OWNER: &str = "owner";
 const NATIVE_DENOM: &str = "ujuno";
-
-fn cw_vesting_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        crate::contract::execute,
-        crate::contract::instantiate,
-        crate::contract::query,
-    );
-    Box::new(contract)
-}
 
 fn get_vesting_payment(app: &App, cw_vesting_addr: Addr) -> Vest {
     app.wrap()
@@ -214,7 +203,7 @@ fn test_happy_cw20_path() {
     );
 
     // No time has passed, so nothing is withdrawable.
-    let err: ContractError = app
+    let err: cw_vesting::ContractError = app
         .execute_contract(
             bob.clone(),
             cw_vesting_addr.clone(),
@@ -226,7 +215,7 @@ fn test_happy_cw20_path() {
         .unwrap();
     assert_eq!(
         err,
-        ContractError::InvalidWithdrawal {
+        cw_vesting::ContractError::InvalidWithdrawal {
             request: Uint128::zero(),
             claimable: Uint128::zero()
         }
@@ -283,7 +272,7 @@ fn test_happy_native_path() {
     );
 
     // No time has passed, so nothing is withdrawable.
-    let err: ContractError = app
+    let err: cw_vesting::ContractError = app
         .execute_contract(
             bob.clone(),
             cw_vesting_addr.clone(),
@@ -295,7 +284,7 @@ fn test_happy_native_path() {
         .unwrap();
     assert_eq!(
         err,
-        ContractError::InvalidWithdrawal {
+        cw_vesting::ContractError::InvalidWithdrawal {
             request: Uint128::zero(),
             claimable: Uint128::zero()
         }
@@ -420,7 +409,7 @@ fn test_cancel_vesting() {
     } = setup_test_case(&mut app, InstantiateMsg::default(), &[]);
 
     // Non-owner can't cancel
-    let err: ContractError = app
+    let err: cw_vesting::ContractError = app
         .execute_contract(
             Addr::unchecked(ALICE),
             cw_vesting_addr.clone(),
@@ -432,7 +421,7 @@ fn test_cancel_vesting() {
         .unwrap();
     assert_eq!(
         err,
-        ContractError::Ownable(cw_ownable::OwnershipError::NotOwner)
+        cw_vesting::ContractError::Ownable(cw_ownable::OwnershipError::NotOwner)
     );
 
     // Advance the clock by 1/2 the vesting period.
@@ -451,7 +440,7 @@ fn test_cancel_vesting() {
     .unwrap();
 
     // Can't distribute as tokens are already distributed.
-    let err: ContractError = app
+    let err: cw_vesting::ContractError = app
         .execute_contract(
             Addr::unchecked(BOB),
             cw_vesting_addr,
@@ -461,7 +450,10 @@ fn test_cancel_vesting() {
         .unwrap_err()
         .downcast()
         .unwrap();
-    assert!(matches!(err, ContractError::InvalidWithdrawal { .. }));
+    assert!(matches!(
+        err,
+        cw_vesting::ContractError::InvalidWithdrawal { .. }
+    ));
 
     // Unvested funds have been returned to contract owner
     assert_eq!(
@@ -513,7 +505,7 @@ fn test_catch_imposter_cw20() {
     };
 
     // Errors that cw20 does not match what was expected
-    let error: ContractError = app
+    let error: cw_vesting::ContractError = app
         .execute_contract(
             Addr::unchecked(OWNER),
             Addr::unchecked(cw20_imposter_addr),
@@ -523,7 +515,7 @@ fn test_catch_imposter_cw20() {
         .unwrap_err()
         .downcast()
         .unwrap();
-    assert_eq!(error, ContractError::WrongCw20);
+    assert_eq!(error, cw_vesting::ContractError::WrongCw20);
 }
 
 #[test]
@@ -542,7 +534,7 @@ fn test_incorrect_native_funding_amount() {
     let (_, _, cw_vesting_code_id) = setup_contracts(&mut app);
 
     // Instantiate cw-vesting contract errors with incorrect amount
-    let error: ContractError = app
+    let error: cw_vesting::ContractError = app
         .instantiate_contract(
             cw_vesting_code_id,
             alice,
@@ -556,7 +548,7 @@ fn test_incorrect_native_funding_amount() {
         .unwrap();
     assert_eq!(
         error,
-        ContractError::WrongFundAmount {
+        cw_vesting::ContractError::WrongFundAmount {
             sent: Uint128::new(100),
             expected: Uint128::new(TOTAL_VEST)
         }

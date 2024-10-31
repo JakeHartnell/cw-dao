@@ -5,8 +5,12 @@ use cosmwasm_std::{
 use cw_multi_test::{next_block, App, Contract, ContractWrapper, Executor};
 use dao_interface::query::SubDao;
 use dao_testing::contracts::{
-    cw20_base_contract, cw20_staked_balances_voting_contract, cw4_group_contract, dao_dao_contract,
-    proposal_single_contract, v1_dao_dao_contract, v1_proposal_single_contract,
+    cw20_base_contract, cw20_stake_contract, cw4_group_contract, dao_dao_core_contract,
+    dao_proposal_single_contract, dao_voting_cw20_staked_contract, dao_voting_cw4_contract,
+    v1::{
+        cw20_stake_v1_contract, cw4_voting_v1_contract, cw_core_v1_contract,
+        cw_proposal_single_v1_contract,
+    },
 };
 
 use crate::{
@@ -50,13 +54,13 @@ pub enum VotingType {
 
 pub fn get_v1_code_ids(app: &mut App) -> (CodeIds, V1CodeIds) {
     let code_ids = CodeIds {
-        core: app.store_code(v1_dao_dao_contract()),
-        proposal_single: app.store_code(v1_proposal_single_contract()),
+        core: app.store_code(cw_core_v1_contract()),
+        proposal_single: app.store_code(cw_proposal_single_v1_contract()),
         cw20_base: app.store_code(cw20_base_contract()),
-        cw20_stake: app.store_code(v1_cw20_stake_contract()),
-        cw20_voting: app.store_code(cw20_staked_balances_voting_contract()),
+        cw20_stake: app.store_code(cw20_stake_v1_contract()),
+        cw20_voting: app.store_code(dao_voting_cw20_staked_contract()),
         cw4_group: app.store_code(cw4_group_contract()),
-        cw4_voting: app.store_code(v1_cw4_voting_contract()),
+        cw4_voting: app.store_code(cw4_voting_v1_contract()),
     };
 
     let v1_code_ids = V1CodeIds {
@@ -70,10 +74,10 @@ pub fn get_v1_code_ids(app: &mut App) -> (CodeIds, V1CodeIds) {
 
 pub fn get_v2_code_ids(app: &mut App) -> (CodeIds, V2CodeIds) {
     let code_ids = CodeIds {
-        core: app.store_code(dao_dao_contract()),
-        proposal_single: app.store_code(proposal_single_contract()),
+        core: app.store_code(dao_dao_core_contract()),
+        proposal_single: app.store_code(dao_proposal_single_contract()),
         cw20_base: app.store_code(cw20_base_contract()),
-        cw20_stake: app.store_code(v2_cw20_stake_contract()),
+        cw20_stake: app.store_code(cw20_stake_contract()),
         cw20_voting: app.store_code(dao_voting_cw20_staked_contract()),
         cw4_group: app.store_code(cw4_group_contract()),
         cw4_voting: app.store_code(dao_voting_cw4_contract()),
@@ -265,67 +269,6 @@ pub fn set_cw20_to_dao(app: &mut App, sender: Addr, addrs: ModuleAddrs) {
             balance: Uint128::new(100),
         }]
     );
-}
-
-pub fn dao_voting_cw20_staked_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        dao_voting_cw20_staked::contract::execute,
-        dao_voting_cw20_staked::contract::instantiate,
-        dao_voting_cw20_staked::contract::query,
-    )
-    .with_reply(dao_voting_cw20_staked::contract::reply)
-    .with_migrate(dao_voting_cw20_staked::contract::migrate);
-    Box::new(contract)
-}
-
-pub fn migrator_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        crate::contract::execute,
-        crate::contract::instantiate,
-        crate::contract::query,
-    )
-    .with_reply(crate::contract::reply);
-    Box::new(contract)
-}
-
-pub fn v1_cw20_stake_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        cw20_stake_v1::contract::execute,
-        cw20_stake_v1::contract::instantiate,
-        cw20_stake_v1::contract::query,
-    );
-    Box::new(contract)
-}
-
-pub fn v2_cw20_stake_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        cw20_stake::contract::execute,
-        cw20_stake::contract::instantiate,
-        cw20_stake::contract::query,
-    )
-    .with_migrate(cw20_stake::contract::migrate);
-    Box::new(contract)
-}
-
-pub fn v1_cw4_voting_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        cw4_voting_v1::contract::execute,
-        cw4_voting_v1::contract::instantiate,
-        cw4_voting_v1::contract::query,
-    )
-    .with_reply(cw4_voting_v1::contract::reply);
-    Box::new(contract)
-}
-
-pub fn dao_voting_cw4_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        dao_voting_cw4::contract::execute,
-        dao_voting_cw4::contract::instantiate,
-        dao_voting_cw4::contract::query,
-    )
-    .with_reply(dao_voting_cw4::contract::reply)
-    .with_migrate(dao_voting_cw4::contract::migrate);
-    Box::new(contract)
 }
 
 fn some_init(

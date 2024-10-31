@@ -8,11 +8,11 @@ use crate::testing::queries::{
     query_balance_cw20, query_dao_token, query_multiple_proposal_module, query_proposal,
 };
 use crate::testing::tests::{get_pre_propose_info, ALTERNATIVE_ADDR, CREATOR_ADDR};
-use crate::ContractError;
 use cosmwasm_std::{to_json_binary, Addr, CosmosMsg, Decimal, Uint128, WasmMsg};
 use cw20::Cw20Coin;
 use cw_multi_test::{next_block, App, Executor};
 use cw_utils::Duration;
+use dao_proposal_multiple::ContractError;
 use dao_voting::{
     deposit::{DepositRefundPolicy, UncheckedDepositInfo, VotingModuleTokenType},
     multiple_choice::{

@@ -1,44 +1,25 @@
 use cosmwasm_std::{
     testing::{mock_dependencies, mock_env},
-    to_json_binary, Addr, CosmosMsg, Empty, Uint128, WasmMsg,
+    to_json_binary, Addr, CosmosMsg, Uint128, WasmMsg,
 };
 use cw2::ContractVersion;
-use cw_multi_test::{next_block, App, Contract, ContractWrapper, Executor};
+use cw_multi_test::{next_block, App, Executor};
 use dao_interface::voting::{
     InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
+use dao_testing::contracts::{cw4_group_contract, dao_voting_cw4_contract};
 
 use crate::{
     contract::{migrate, CONTRACT_NAME, CONTRACT_VERSION},
     msg::{GroupContract, InstantiateMsg, MigrateMsg, QueryMsg},
-    ContractError,
 };
+use dao_voting_cw4::ContractError;
 
 const DAO_ADDR: &str = "dao";
 const ADDR1: &str = "addr1";
 const ADDR2: &str = "addr2";
 const ADDR3: &str = "addr3";
 const ADDR4: &str = "addr4";
-
-fn cw4_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        cw4_group::contract::execute,
-        cw4_group::contract::instantiate,
-        cw4_group::contract::query,
-    );
-    Box::new(contract)
-}
-
-fn voting_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        crate::contract::execute,
-        crate::contract::instantiate,
-        crate::contract::query,
-    )
-    .with_reply(crate::contract::reply)
-    .with_migrate(crate::contract::migrate);
-    Box::new(contract)
-}
 
 fn instantiate_voting(app: &mut App, voting_id: u64, msg: InstantiateMsg) -> Addr {
     app.instantiate_contract(
@@ -53,8 +34,8 @@ fn instantiate_voting(app: &mut App, voting_id: u64, msg: InstantiateMsg) -> Add
 }
 
 fn setup_test_case(app: &mut App) -> Addr {
-    let cw4_id = app.store_code(cw4_contract());
-    let voting_id = app.store_code(voting_contract());
+    let cw4_id = app.store_code(cw4_group_contract());
+    let voting_id = app.store_code(dao_voting_cw4_contract());
 
     let members = vec![
         cw4::Member {
@@ -93,8 +74,8 @@ fn test_instantiate() {
     let _voting_addr = setup_test_case(&mut app);
 
     // Instantiate with no members, error
-    let voting_id = app.store_code(voting_contract());
-    let cw4_id = app.store_code(cw4_contract());
+    let voting_id = app.store_code(dao_voting_cw4_contract());
+    let cw4_id = app.store_code(cw4_group_contract());
     let msg = InstantiateMsg {
         group_contract: GroupContract::New {
             cw4_group_code_id: cw4_id,
@@ -148,8 +129,8 @@ fn test_instantiate() {
 pub fn test_instantiate_existing_contract() {
     let mut app = App::default();
 
-    let voting_id = app.store_code(voting_contract());
-    let cw4_id = app.store_code(cw4_contract());
+    let voting_id = app.store_code(dao_voting_cw4_contract());
+    let cw4_id = app.store_code(cw4_group_contract());
 
     // Fail with no members.
     let cw4_addr = app
@@ -573,8 +554,8 @@ fn test_migrate() {
     ];
 
     // Instantiate with no members, error
-    let voting_id = app.store_code(voting_contract());
-    let cw4_id = app.store_code(cw4_contract());
+    let voting_id = app.store_code(dao_voting_cw4_contract());
+    let cw4_id = app.store_code(cw4_group_contract());
     let msg = InstantiateMsg {
         group_contract: GroupContract::New {
             cw4_group_code_id: cw4_id,
@@ -631,8 +612,8 @@ fn test_migrate() {
 fn test_duplicate_member() {
     let mut app = App::default();
     let _voting_addr = setup_test_case(&mut app);
-    let voting_id = app.store_code(voting_contract());
-    let cw4_id = app.store_code(cw4_contract());
+    let voting_id = app.store_code(dao_voting_cw4_contract());
+    let cw4_id = app.store_code(cw4_group_contract());
     // Instantiate with members but have a duplicate
     // Total weight is actually 69 but ADDR3 appears twice.
     let msg = InstantiateMsg {

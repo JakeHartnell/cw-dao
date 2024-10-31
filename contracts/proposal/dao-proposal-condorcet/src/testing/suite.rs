@@ -6,7 +6,8 @@ use dao_interface::{
     voting::InfoResponse,
 };
 use dao_testing::contracts::{
-    cw4_group_contract, dao_dao_contract, dao_voting_cw4_contract, proposal_condorcet_contract,
+    cw4_group_contract, dao_dao_core_contract, dao_proposal_condorcet_contract,
+    dao_voting_cw4_contract,
 };
 use dao_voting::threshold::PercentageThreshold;
 use dao_voting_cw4::msg::GroupContract;
@@ -74,8 +75,8 @@ impl SuiteBuilder {
         let sender = Addr::unchecked(&initial_members[0].addr);
 
         let mut app = App::default();
-        let condorcet_id = app.store_code(proposal_condorcet_contract());
-        let core_id = app.store_code(dao_dao_contract());
+        let condorcet_id = app.store_code(dao_proposal_condorcet_contract());
+        let core_id = app.store_code(dao_dao_core_contract());
         let cw4_id = app.store_code(cw4_group_contract());
         let cw4_voting_id = app.store_code(dao_voting_cw4_contract());
 

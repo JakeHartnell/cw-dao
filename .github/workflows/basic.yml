@@ -12,6 +12,17 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v2
 
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: false
+          docker-images: true
+          swap-storage: true
+
       - name: Install latest stable toolchain
         uses: actions-rs/toolchain@v1
         with:

@@ -31,7 +31,7 @@ START_DIR=$(pwd)
 # Packages
 
 cd packages/cw-denom
-cargo publish
+cargo hack publish --no-dev-deps --allow-dirty
 cd "$START_DIR"
 
 cd packages/cw-hooks

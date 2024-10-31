@@ -39,6 +39,7 @@ thiserror = { workspace = true }
 cw-orch.workspace = true
 
 [dev-dependencies]
+dao-rewards-distributor = { workspace = true }
 cw-multi-test = { workspace = true }
 anyhow = { workspace = true }
 cw20-stake = { workspace = true, features = ["library"] }

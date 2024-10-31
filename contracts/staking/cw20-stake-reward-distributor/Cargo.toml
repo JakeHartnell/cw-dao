@@ -2,7 +2,8 @@
 name = "cw20-stake-reward-distributor"
 edition = "2018"
 authors = [
-    "Vernon Johnson <vtj2105@columbia.edu>, ekez <ekez@withoutdoing.com>",
+  "Vernon Johnson <vtj2105@columbia.edu>",
+  "ekez <ekez@withoutdoing.com>",
 ]
 description = "Distributes cw20 staking rewards."
 license = { workspace = true }
@@ -34,4 +35,6 @@ cw20-stake-reward-distributor-v1 = { workspace = true, features = ["library"] }
 cw-orch = { workspace = true }
 
 [dev-dependencies]
+cw20-stake-reward-distributor = { workspace = true }
 cw-multi-test = { workspace = true }
+dao-testing = { workspace = true }

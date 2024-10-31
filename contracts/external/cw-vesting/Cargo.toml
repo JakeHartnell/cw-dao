@@ -37,6 +37,7 @@ thiserror = { workspace = true }
 wynd-utils = { workspace = true }
 
 [dev-dependencies]
+cw-vesting = { workspace = true }
 anyhow = { workspace = true }
 cw-multi-test = { workspace = true }
 cw20-base = { workspace = true }

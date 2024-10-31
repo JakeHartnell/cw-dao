@@ -9,7 +9,7 @@ use dao_interface::{
     state::{Admin, ModuleInstantiateInfo},
     token::InitialBalance,
 };
-use dao_testing::contracts::{dao_dao_contract, proposal_single_contract};
+use dao_testing::contracts::{dao_dao_core_contract, dao_proposal_single_contract};
 
 use crate::{
     bitsong::{Coin, MsgMint, MsgSetUri},
@@ -30,8 +30,8 @@ fn test_issue_fantoken() -> anyhow::Result<()> {
         ..
     } = setup_test();
 
-    let core_id = app.store_code(dao_dao_contract());
-    let proposal_single_id = app.store_code(proposal_single_contract());
+    let core_id = app.store_code(dao_dao_core_contract());
+    let proposal_single_id = app.store_code(dao_proposal_single_contract());
 
     let initial_balances = vec![InitialBalance {
         amount: Uint128::new(100),
@@ -132,8 +132,8 @@ fn test_initial_fantoken_balances() -> anyhow::Result<()> {
         ..
     } = setup_test();
 
-    let core_id = app.store_code(dao_dao_contract());
-    let proposal_single_id = app.store_code(proposal_single_contract());
+    let core_id = app.store_code(dao_dao_core_contract());
+    let proposal_single_id = app.store_code(dao_proposal_single_contract());
 
     let initial_balances = vec![InitialBalance {
         amount: Uint128::new(100),
@@ -239,8 +239,8 @@ fn test_fantoken_minter_and_authority_set_to_dao() -> anyhow::Result<()> {
         ..
     } = setup_test();
 
-    let core_id = app.store_code(dao_dao_contract());
-    let proposal_single_id = app.store_code(proposal_single_contract());
+    let core_id = app.store_code(dao_dao_core_contract());
+    let proposal_single_id = app.store_code(dao_proposal_single_contract());
 
     let initial_balances = vec![InitialBalance {
         amount: Uint128::new(100),
@@ -396,8 +396,8 @@ fn test_fantoken_can_be_staked() -> anyhow::Result<()> {
         ..
     } = setup_test();
 
-    let core_id = app.store_code(dao_dao_contract());
-    let proposal_single_id = app.store_code(proposal_single_contract());
+    let core_id = app.store_code(dao_dao_core_contract());
+    let proposal_single_id = app.store_code(dao_proposal_single_contract());
 
     let initial_balances = vec![InitialBalance {
         amount: Uint128::new(100),

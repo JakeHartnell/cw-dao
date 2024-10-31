@@ -1,13 +1,14 @@
 use cosmwasm_std::{to_json_binary, Addr, Coin, Empty, Uint128};
 use cw20::Cw20Coin;
-use cw_multi_test::{next_block, App, BankSudo, ContractWrapper, Executor, SudoMsg};
+use cw_multi_test::{next_block, App, BankSudo, Executor, SudoMsg};
 use cw_utils::Duration;
 use dao_interface::state::{Admin, ModuleInstantiateInfo};
 use dao_pre_propose_multiple as cppm;
 use dao_testing::contracts::{
-    cw20_balances_voting_contract, cw20_base_contract, cw20_stake_contract,
-    cw20_staked_balances_voting_contract, cw4_group_contract, cw721_base_contract,
-    dao_dao_contract, native_staked_balances_voting_contract, pre_propose_multiple_contract,
+    cw20_base_contract, cw20_stake_contract, cw4_group_contract, cw721_base_contract,
+    dao_dao_core_contract, dao_pre_propose_multiple_contract, dao_proposal_multiple_contract,
+    dao_voting_cw20_balance_contract, dao_voting_cw20_staked_contract,
+    dao_voting_cw721_staked_contract, dao_voting_token_staked_contract,
 };
 use dao_voting::{
     deposit::{DepositRefundPolicy, UncheckedDepositInfo, VotingModuleTokenType},
@@ -21,9 +22,7 @@ use dao_voting::{
 use dao_voting_cw4::msg::GroupContract;
 
 use crate::testing::tests::ALTERNATIVE_ADDR;
-use crate::{
-    msg::InstantiateMsg, testing::tests::proposal_multiple_contract, testing::tests::CREATOR_ADDR,
-};
+use crate::{msg::InstantiateMsg, testing::tests::CREATOR_ADDR};
 
 #[allow(dead_code)]
 fn get_pre_propose_info(
@@ -31,7 +30,7 @@ fn get_pre_propose_info(
     deposit_info: Option<UncheckedDepositInfo>,
     open_proposal_submission: bool,
 ) -> PreProposeInfo {
-    let pre_propose_contract = app.store_code(pre_propose_multiple_contract());
+    let pre_propose_contract = app.store_code(dao_pre_propose_multiple_contract());
 
     let submission_policy = if open_proposal_submission {
         PreProposeSubmissionPolicy::Anyone { denylist: vec![] }
@@ -107,7 +106,7 @@ pub fn _instantiate_with_staked_cw721_governance(
     proposal_module_instantiate: InstantiateMsg,
     initial_balances: Option<Vec<Cw20Coin>>,
 ) -> Addr {
-    let proposal_module_code_id = app.store_code(proposal_multiple_contract());
+    let proposal_module_code_id = app.store_code(dao_proposal_multiple_contract());
 
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
@@ -132,15 +131,8 @@ pub fn _instantiate_with_staked_cw721_governance(
     };
 
     let cw721_id = app.store_code(cw721_base_contract());
-    let cw721_stake_id = app.store_code({
-        let contract = ContractWrapper::new(
-            dao_voting_cw721_staked::contract::execute,
-            dao_voting_cw721_staked::contract::instantiate,
-            dao_voting_cw721_staked::contract::query,
-        );
-        Box::new(contract)
-    });
-    let core_contract_id = app.store_code(dao_dao_contract());
+    let cw721_stake_id = app.store_code(dao_voting_cw721_staked_contract());
+    let core_contract_id = app.store_code(dao_dao_core_contract());
 
     let nft_address = app
         .instantiate_contract(
@@ -248,7 +240,7 @@ pub fn instantiate_with_native_staked_balances_governance(
     proposal_module_instantiate: InstantiateMsg,
     initial_balances: Option<Vec<Cw20Coin>>,
 ) -> Addr {
-    let proposal_module_code_id = app.store_code(proposal_multiple_contract());
+    let proposal_module_code_id = app.store_code(dao_proposal_multiple_contract());
 
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
@@ -273,8 +265,8 @@ pub fn instantiate_with_native_staked_balances_governance(
             .collect()
     };
 
-    let native_stake_id = app.store_code(native_staked_balances_voting_contract());
-    let core_contract_id = app.store_code(dao_dao_contract());
+    let native_stake_id = app.store_code(dao_voting_token_staked_contract());
+    let core_contract_id = app.store_code(dao_dao_core_contract());
 
     let instantiate_core = dao_interface::msg::InstantiateMsg {
         admin: None,
@@ -360,11 +352,11 @@ pub fn instantiate_with_cw20_balances_governance(
     proposal_module_instantiate: InstantiateMsg,
     initial_balances: Option<Vec<Cw20Coin>>,
 ) -> Addr {
-    let proposal_module_code_id = app.store_code(proposal_multiple_contract());
+    let proposal_module_code_id = app.store_code(dao_proposal_multiple_contract());
 
     let cw20_id = app.store_code(cw20_base_contract());
-    let core_id = app.store_code(dao_dao_contract());
-    let votemod_id = app.store_code(cw20_balances_voting_contract());
+    let core_id = app.store_code(dao_dao_core_contract());
+    let votemod_id = app.store_code(dao_voting_cw20_balance_contract());
 
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
@@ -441,7 +433,7 @@ pub fn instantiate_with_staked_balances_governance(
     proposal_module_instantiate: InstantiateMsg,
     initial_balances: Option<Vec<Cw20Coin>>,
 ) -> Addr {
-    let proposal_module_code_id = app.store_code(proposal_multiple_contract());
+    let proposal_module_code_id = app.store_code(dao_proposal_multiple_contract());
 
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
@@ -468,8 +460,8 @@ pub fn instantiate_with_staked_balances_governance(
 
     let cw20_id = app.store_code(cw20_base_contract());
     let cw20_stake_id = app.store_code(cw20_stake_contract());
-    let staked_balances_voting_id = app.store_code(cw20_staked_balances_voting_contract());
-    let core_contract_id = app.store_code(dao_dao_contract());
+    let staked_balances_voting_id = app.store_code(dao_voting_cw20_staked_contract());
+    let core_contract_id = app.store_code(dao_dao_core_contract());
 
     let instantiate_core = dao_interface::msg::InstantiateMsg {
         admin: None,
@@ -572,7 +564,7 @@ pub fn instantiate_with_multiple_staked_balances_governance(
     proposal_module_instantiate: InstantiateMsg,
     initial_balances: Option<Vec<Cw20Coin>>,
 ) -> Addr {
-    let proposal_module_code_id = app.store_code(proposal_multiple_contract());
+    let proposal_module_code_id = app.store_code(dao_proposal_multiple_contract());
 
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![
@@ -605,8 +597,8 @@ pub fn instantiate_with_multiple_staked_balances_governance(
 
     let cw20_id = app.store_code(cw20_base_contract());
     let cw20_stake_id = app.store_code(cw20_stake_contract());
-    let staked_balances_voting_id = app.store_code(cw20_staked_balances_voting_contract());
-    let core_contract_id = app.store_code(dao_dao_contract());
+    let staked_balances_voting_id = app.store_code(dao_voting_cw20_staked_contract());
+    let core_contract_id = app.store_code(dao_dao_core_contract());
 
     let instantiate_core = dao_interface::msg::InstantiateMsg {
         admin: None,
@@ -712,11 +704,11 @@ pub fn instantiate_with_staking_active_threshold(
     initial_balances: Option<Vec<Cw20Coin>>,
     active_threshold: Option<ActiveThreshold>,
 ) -> Addr {
-    let proposal_module_code_id = app.store_code(proposal_multiple_contract());
+    let proposal_module_code_id = app.store_code(dao_proposal_multiple_contract());
     let cw20_id = app.store_code(cw20_base_contract());
     let cw20_staking_id = app.store_code(cw20_stake_contract());
-    let core_id = app.store_code(dao_dao_contract());
-    let votemod_id = app.store_code(cw20_staked_balances_voting_contract());
+    let core_id = app.store_code(dao_dao_core_contract());
+    let votemod_id = app.store_code(dao_voting_cw20_staked_contract());
 
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
@@ -781,9 +773,9 @@ pub fn _instantiate_with_cw4_groups_governance(
     proposal_module_instantiate: InstantiateMsg,
     initial_weights: Option<Vec<Cw20Coin>>,
 ) -> Addr {
-    let proposal_module_code_id = app.store_code(proposal_multiple_contract());
+    let proposal_module_code_id = app.store_code(dao_proposal_multiple_contract());
     let cw4_id = app.store_code(cw4_group_contract());
-    let core_id = app.store_code(dao_dao_contract());
+    let core_id = app.store_code(dao_dao_core_contract());
     let votemod_id = app.store_code(cw4_group_contract());
 
     let initial_weights = initial_weights.unwrap_or_else(|| {

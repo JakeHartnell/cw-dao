@@ -1,4 +1,5 @@
 use cosmwasm_std::{Addr, BlockInfo, Deps, DepsMut, Env, StdResult, Uint128, Uint256};
+use cw20::Expiration;
 
 use crate::{
     helpers::{
@@ -95,6 +96,12 @@ pub fn get_active_total_earned_puvp(
             let last_time_rewards_distributed =
                 distribution.get_latest_reward_distribution_time(block);
 
+            // if never distributed rewards (i.e. not yet funded), return
+            // current, which must be 0.
+            if let Expiration::Never {} = last_time_rewards_distributed {
+                return Ok(curr);
+            }
+
             // get the duration from the last time rewards were updated to the
             // last time rewards were distributed. this will be 0 if the rewards
             // were updated at or after the last time rewards were distributed.
@@ -114,17 +121,13 @@ pub fn get_active_total_earned_puvp(
             if total_power.is_zero() {
                 Ok(curr)
             } else {
-                // count intervals of the rewards emission that have passed
-                // since the last update which need to be distributed
+                // count (partial) intervals of the rewards emission that have
+                // passed since the last update which need to be distributed
                 let complete_distribution_periods =
-                    new_reward_distribution_duration.checked_div(&duration)?;
+                    new_reward_distribution_duration.ratio(&duration)?;
 
-                // It is impossible for this to overflow as total rewards can
-                // never exceed max value of Uint128 as total tokens in
-                // existence cannot exceed Uint128 (because the bank module Coin
-                // type uses Uint128).
-                let new_rewards_distributed = amount
-                    .full_mul(complete_distribution_periods)
+                let new_rewards_distributed = Uint256::from(amount)
+                    .checked_mul_floor(complete_distribution_periods)?
                     .checked_mul(scale_factor())?;
 
                 // the new rewards per unit voting power that have been
