@@ -2,4 +2,4 @@
 
 mod nft_claim;
 
-pub use nft_claim::{NftClaim, NftClaimError, NftClaims, NftClaimsResponse};
+pub use nft_claim::{NftClaim, NftClaimError, NftClaims};

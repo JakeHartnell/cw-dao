@@ -1,12 +1,14 @@
 use cosmwasm_std::{Addr, StdResult, Uint128};
-use cw721_controllers::NftClaimsResponse;
 use cw_controllers::HooksResponse;
 use dao_interface::voting::{
     InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
 use omniflix_std::types::omniflix::onft::v1beta1::{QueryOnftRequest, QueryOnftResponse};
 
-use crate::{msg::QueryMsg, state::Config};
+use crate::{
+    msg::{NftClaimsResponse, QueryMsg},
+    state::Config,
+};
 
 use super::app::OmniflixApp;
 

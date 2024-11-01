@@ -17,7 +17,10 @@ use dao_voting::threshold::{
     ActiveThresholdResponse,
 };
 
-use crate::msg::{ClaimType, ExecuteMsg, InstantiateMsg, MigrateMsg, NftContract, QueryMsg};
+use crate::msg::{
+    ClaimType, ExecuteMsg, InstantiateMsg, MigrateMsg, NftClaim, NftClaimsResponse, NftContract,
+    QueryMsg,
+};
 use crate::state::{
     register_staked_nft, register_unstaked_nfts, Config, ACTIVE_THRESHOLD, CONFIG, DAO, HOOKS,
     INITIAL_NFTS, LEGACY_NFT_CLAIMS, NFT_BALANCES, NFT_CLAIMS, STAKED_NFTS_PER_OWNER,
@@ -348,7 +351,6 @@ pub fn execute_claim_nfts(
         ClaimType::All => {
             let token_ids = NFT_CLAIMS
                 .query_claims(deps.as_ref(), &info.sender, None, None)?
-                .nft_claims
                 .into_iter()
                 .filter(|nft| nft.release_at.is_expired(&env.block))
                 .map(|nft| nft.token_id)
@@ -648,18 +650,28 @@ pub fn query_nft_claims(
         .query_claims(deps, &addr)?
         .nft_claims
         .into_iter()
-        .map(|c| cw721_controllers::NftClaim::new(c.token_id, c.release_at))
+        .map(|c| NftClaim {
+            token_id: c.token_id,
+            release_at: c.release_at,
+            legacy: true,
+        })
         .collect::<Vec<_>>();
 
     // paginate all new claims
     let claims = NFT_CLAIMS
         .query_claims(deps, &addr, start_after.as_ref(), limit)?
-        .nft_claims;
+        .into_iter()
+        .map(|c| NftClaim {
+            token_id: c.token_id,
+            release_at: c.release_at,
+            legacy: false,
+        })
+        .collect::<Vec<_>>();
 
     // combine legacy and new claims
     let nft_claims = legacy_claims.into_iter().chain(claims).collect();
 
-    to_json_binary(&cw721_controllers::NftClaimsResponse { nft_claims })
+    to_json_binary(&NftClaimsResponse { nft_claims })
 }
 
 pub fn query_hooks(deps: Deps) -> StdResult<Binary> {

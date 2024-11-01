@@ -1,6 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Binary;
-use cw721::Cw721ReceiveMsg;
+use cw721::{Cw721ReceiveMsg, Expiration};
 use cw_utils::Duration;
 use dao_dao_macros::{active_query, voting_module_query};
 use dao_voting::threshold::{ActiveThreshold, ActiveThresholdResponse};
@@ -89,7 +89,7 @@ pub enum ClaimType {
 pub enum QueryMsg {
     #[returns(crate::state::Config)]
     Config {},
-    #[returns(::cw721_controllers::NftClaimsResponse)]
+    #[returns(NftClaimsResponse)]
     NftClaims {
         address: String,
         start_after: Option<String>,
@@ -106,6 +106,21 @@ pub enum QueryMsg {
     },
     #[returns(ActiveThresholdResponse)]
     ActiveThreshold {},
+}
+
+#[cw_serde]
+pub struct NftClaimsResponse {
+    pub nft_claims: Vec<NftClaim>,
+}
+
+#[cw_serde]
+pub struct NftClaim {
+    /// The token ID of the NFT being claimed.
+    pub token_id: String,
+    /// The expiration time of the claim.
+    pub release_at: Expiration,
+    /// Whether the claim is a legacy claim.
+    pub legacy: bool,
 }
 
 #[cw_serde]

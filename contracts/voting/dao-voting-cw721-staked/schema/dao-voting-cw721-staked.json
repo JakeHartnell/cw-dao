@@ -1019,14 +1019,25 @@
         "NftClaim": {
           "type": "object",
           "required": [
+            "legacy",
             "release_at",
             "token_id"
           ],
           "properties": {
+            "legacy": {
+              "description": "Whether the claim is a legacy claim.",
+              "type": "boolean"
+            },
             "release_at": {
-              "$ref": "#/definitions/Expiration"
+              "description": "The expiration time of the claim.",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/Expiration"
+                }
+              ]
             },
             "token_id": {
+              "description": "The token ID of the NFT being claimed.",
               "type": "string"
             }
           },

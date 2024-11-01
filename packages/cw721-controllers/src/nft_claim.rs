@@ -17,11 +17,6 @@ pub enum NftClaimError {
 }
 
 #[cw_serde]
-pub struct NftClaimsResponse {
-    pub nft_claims: Vec<NftClaim>,
-}
-
-#[cw_serde]
 pub struct NftClaim {
     pub token_id: String,
     pub release_at: Expiration,
@@ -108,12 +103,11 @@ impl<'a> NftClaims<'a> {
         address: &Addr,
         start_after: Option<&String>,
         limit: Option<u32>,
-    ) -> StdResult<NftClaimsResponse> {
+    ) -> StdResult<Vec<NftClaim>> {
         let limit = limit.map(|l| l as usize).unwrap_or(usize::MAX);
         let start = start_after.map(Bound::<&String>::exclusive);
 
-        let nft_claims = self
-            .0
+        self.0
             .prefix(address)
             .range(deps.storage, start, None, Order::Ascending)
             .take(limit)
@@ -123,9 +117,7 @@ impl<'a> NftClaims<'a> {
                     release_at,
                 })
             })
-            .collect::<StdResult<Vec<_>>>()?;
-
-        Ok(NftClaimsResponse { nft_claims })
+            .collect()
     }
 }
 
@@ -457,7 +449,7 @@ mod test {
             .collect::<StdResult<Vec<_>>>()
             .unwrap();
 
-        assert_eq!(queried_claims.nft_claims, saved_claims);
+        assert_eq!(queried_claims, saved_claims);
     }
 
     #[test]
@@ -481,7 +473,7 @@ mod test {
             .query_claims(deps.as_ref(), &Addr::unchecked("addr"), None, None)
             .unwrap();
         assert_eq!(
-            queried_claims.nft_claims,
+            queried_claims,
             vec![
                 NftClaim::new(TEST_BAYC_TOKEN_ID.to_string(), Expiration::AtHeight(10)),
                 NftClaim::new(
@@ -495,7 +487,7 @@ mod test {
             .query_claims(deps.as_ref(), &Addr::unchecked("addr"), None, Some(1))
             .unwrap();
         assert_eq!(
-            queried_claims.nft_claims,
+            queried_claims,
             vec![NftClaim::new(
                 TEST_BAYC_TOKEN_ID.to_string(),
                 Expiration::AtHeight(10)
@@ -511,7 +503,7 @@ mod test {
             )
             .unwrap();
         assert_eq!(
-            queried_claims.nft_claims,
+            queried_claims,
             vec![NftClaim::new(
                 TEST_CRYPTO_PUNKS_TOKEN_ID.to_string(),
                 Expiration::AtHeight(10)
@@ -526,7 +518,7 @@ mod test {
                 None,
             )
             .unwrap();
-        assert_eq!(queried_claims.nft_claims.len(), 0);
+        assert_eq!(queried_claims.len(), 0);
     }
 
     #[test]
@@ -547,6 +539,6 @@ mod test {
             .query_claims(deps.as_ref(), &Addr::unchecked("addr2"), None, None)
             .unwrap();
 
-        assert_eq!(queried_claims.nft_claims.len(), 0);
+        assert_eq!(queried_claims.len(), 0);
     }
 }

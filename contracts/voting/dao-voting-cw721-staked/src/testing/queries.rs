@@ -1,12 +1,14 @@
 use cosmwasm_std::{Addr, StdResult, Uint128};
-use cw721_controllers::NftClaimsResponse;
 use cw_controllers::HooksResponse;
 use cw_multi_test::App;
 use dao_interface::voting::{
     InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
 
-use crate::{msg::QueryMsg, state::Config};
+use crate::{
+    msg::{NftClaimsResponse, QueryMsg},
+    state::Config,
+};
 
 pub fn query_config(app: &App, module: &Addr) -> StdResult<Config> {
     let config = app.wrap().query_wasm_smart(module, &QueryMsg::Config {})?;

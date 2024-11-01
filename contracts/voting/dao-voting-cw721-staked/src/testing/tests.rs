@@ -4,7 +4,6 @@ use cosmwasm_std::{
     to_json_binary, to_json_vec, Addr, Coin, Decimal, Empty, Storage, Uint128, WasmMsg,
 };
 use cw721_base::msg::{ExecuteMsg as Cw721ExecuteMsg, InstantiateMsg as Cw721InstantiateMsg};
-use cw721_controllers::{NftClaim, NftClaimsResponse};
 use cw_multi_test::{next_block, App, BankSudo, Executor, SudoMsg};
 use cw_storage_plus::Map;
 use cw_utils::Duration;
@@ -17,7 +16,9 @@ use dao_voting::threshold::{ActiveThreshold, ActiveThresholdResponse};
 use crate::testing::execute::{claim_legacy_nfts, claim_specific_nfts};
 use crate::{
     contract::{migrate, CONTRACT_NAME, CONTRACT_VERSION},
-    msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, NftContract, QueryMsg},
+    msg::{
+        ExecuteMsg, InstantiateMsg, MigrateMsg, NftClaim, NftClaimsResponse, NftContract, QueryMsg,
+    },
     testing::{
         execute::{
             claim_nfts, mint_and_stake_nft, mint_nft, stake_nft, unstake_nfts, update_config,
@@ -196,7 +197,8 @@ fn test_update_config() -> anyhow::Result<()> {
         NftClaimsResponse {
             nft_claims: vec![NftClaim {
                 token_id: "1".to_string(),
-                release_at: cw_utils::Expiration::AtHeight(app.block_info().height + 3)
+                release_at: cw_utils::Expiration::AtHeight(app.block_info().height + 3),
+                legacy: false,
             }]
         }
     );
@@ -218,7 +220,8 @@ fn test_update_config() -> anyhow::Result<()> {
         NftClaimsResponse {
             nft_claims: vec![NftClaim {
                 token_id: "1".to_string(),
-                release_at: cw_utils::Expiration::AtHeight(app.block_info().height + 3)
+                release_at: cw_utils::Expiration::AtHeight(app.block_info().height + 3),
+                legacy: false,
             }]
         }
     );
@@ -233,11 +236,13 @@ fn test_update_config() -> anyhow::Result<()> {
             nft_claims: vec![
                 NftClaim {
                     token_id: "1".to_string(),
-                    release_at: cw_utils::Expiration::AtHeight(app.block_info().height + 3)
+                    release_at: cw_utils::Expiration::AtHeight(app.block_info().height + 3),
+                    legacy: false,
                 },
                 NftClaim {
                     token_id: "2".to_string(),
-                    release_at: Duration::Time(1).after(&app.block_info())
+                    release_at: Duration::Time(1).after(&app.block_info()),
+                    legacy: false,
                 }
             ]
         }
@@ -288,7 +293,8 @@ fn test_claims() -> anyhow::Result<()> {
         claims.nft_claims,
         vec![NftClaim {
             token_id: "2".to_string(),
-            release_at: cw_utils::Expiration::AtHeight(app.block_info().height + 1)
+            release_at: cw_utils::Expiration::AtHeight(app.block_info().height + 1),
+            legacy: false,
         }]
     );
 
@@ -353,7 +359,8 @@ pub fn test_legacy_claims_work() -> anyhow::Result<()> {
         claims.nft_claims,
         vec![NftClaim {
             token_id: "4".to_string(),
-            release_at: cw_utils::Expiration::AtHeight(app.block_info().height + 1)
+            release_at: cw_utils::Expiration::AtHeight(app.block_info().height + 1),
+            legacy: true,
         }]
     );
 
@@ -382,7 +389,8 @@ pub fn test_legacy_claims_work() -> anyhow::Result<()> {
         claims.nft_claims,
         vec![NftClaim {
             token_id: "2".to_string(),
-            release_at: cw_utils::Expiration::AtHeight(app.block_info().height + 1)
+            release_at: cw_utils::Expiration::AtHeight(app.block_info().height + 1),
+            legacy: false,
         }]
     );
 
@@ -411,7 +419,8 @@ pub fn test_legacy_claims_work() -> anyhow::Result<()> {
         claims.nft_claims,
         vec![NftClaim {
             token_id: "3".to_string(),
-            release_at: cw_utils::Expiration::AtHeight(app.block_info().height + 1)
+            release_at: cw_utils::Expiration::AtHeight(app.block_info().height + 1),
+            legacy: false,
         }]
     );
 
@@ -440,11 +449,13 @@ pub fn test_legacy_claims_work() -> anyhow::Result<()> {
         vec![
             NftClaim {
                 token_id: "5".to_string(),
-                release_at: cw_utils::Expiration::AtHeight(app.block_info().height + 1)
+                release_at: cw_utils::Expiration::AtHeight(app.block_info().height + 1),
+                legacy: true,
             },
             NftClaim {
                 token_id: "1".to_string(),
-                release_at: cw_utils::Expiration::AtHeight(app.block_info().height + 1)
+                release_at: cw_utils::Expiration::AtHeight(app.block_info().height + 1),
+                legacy: false,
             }
         ]
     );
