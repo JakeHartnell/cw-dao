@@ -235,11 +235,25 @@
           "unsafe_force_withdraw": {
             "type": "object",
             "required": [
-              "amount"
+              "amount",
+              "denom"
             ],
             "properties": {
               "amount": {
-                "$ref": "#/definitions/Coin"
+                "description": "amount to withdraw",
+                "allOf": [
+                  {
+                    "$ref": "#/definitions/Uint128"
+                  }
+                ]
+              },
+              "denom": {
+                "description": "denom to withdraw",
+                "allOf": [
+                  {
+                    "$ref": "#/definitions/UncheckedDenom"
+                  }
+                ]
               }
             },
             "additionalProperties": false
@@ -320,21 +334,6 @@
       "Binary": {
         "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization with serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>. See also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
         "type": "string"
-      },
-      "Coin": {
-        "type": "object",
-        "required": [
-          "amount",
-          "denom"
-        ],
-        "properties": {
-          "amount": {
-            "$ref": "#/definitions/Uint128"
-          },
-          "denom": {
-            "type": "string"
-          }
-        }
       },
       "CreateMsg": {
         "type": "object",

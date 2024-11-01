@@ -2997,7 +2997,10 @@ fn test_unsafe_force_withdraw() {
         suite.get_balance_native(suite.distribution_contract.clone(), &suite.reward_denom);
 
     // non-owner cannot force withdraw
-    let err = suite.unsafe_force_withdraw_unauthorized(coin(100, &suite.reward_denom));
+    let err = suite.unsafe_force_withdraw_unauthorized(
+        100u128,
+        UncheckedDenom::Native(suite.reward_denom.clone()),
+    );
     assert_eq!(err, ContractError::Ownable(OwnershipError::NotOwner));
 
     let after_balance =
@@ -3009,7 +3012,7 @@ fn test_unsafe_force_withdraw() {
     assert_eq!(owner_balance, 0);
 
     // owner can force withdraw
-    suite.unsafe_force_withdraw(coin(100, &suite.reward_denom));
+    suite.unsafe_force_withdraw(100u128, UncheckedDenom::Native(suite.reward_denom.clone()));
 
     // owner has balance
     let owner_balance = suite.get_balance_native(OWNER, &suite.reward_denom);

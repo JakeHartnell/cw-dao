@@ -975,8 +975,11 @@ impl Suite {
             .unwrap();
     }
 
-    pub fn unsafe_force_withdraw(&mut self, amount: Coin) {
-        let msg = ExecuteMsg::UnsafeForceWithdraw { amount };
+    pub fn unsafe_force_withdraw(&mut self, amount: impl Into<Uint128>, denom: UncheckedDenom) {
+        let msg = ExecuteMsg::UnsafeForceWithdraw {
+            amount: amount.into(),
+            denom,
+        };
         self.base
             .app
             .execute_contract(
@@ -988,8 +991,15 @@ impl Suite {
             .unwrap();
     }
 
-    pub fn unsafe_force_withdraw_unauthorized(&mut self, amount: Coin) -> ContractError {
-        let msg = ExecuteMsg::UnsafeForceWithdraw { amount };
+    pub fn unsafe_force_withdraw_unauthorized(
+        &mut self,
+        amount: impl Into<Uint128>,
+        denom: UncheckedDenom,
+    ) -> ContractError {
+        let msg = ExecuteMsg::UnsafeForceWithdraw {
+            amount: amount.into(),
+            denom,
+        };
         self.base
             .app
             .execute_contract(

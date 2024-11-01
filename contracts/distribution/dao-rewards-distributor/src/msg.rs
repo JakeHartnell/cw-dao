@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Coin, Uint128};
+use cosmwasm_std::Uint128;
 use cw20::{Cw20ReceiveMsg, Denom, UncheckedDenom};
 use cw4::MemberChangedHookMsg;
 use cw_ownable::cw_ownable_execute;
@@ -62,7 +62,12 @@ pub enum ExecuteMsg {
     Withdraw { id: u64 },
     /// forcibly withdraw funds from the contract. this is unsafe and should
     /// only be used to recover funds that are stuck in the contract.
-    UnsafeForceWithdraw { amount: Coin },
+    UnsafeForceWithdraw {
+        /// amount to withdraw
+        amount: Uint128,
+        /// denom to withdraw
+        denom: UncheckedDenom,
+    },
 }
 
 #[cw_serde]
