@@ -848,7 +848,6 @@ version = "2.6.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
- "cw-fund-distributor",
  "cw-multi-test",
  "cw-paginate-storage 2.6.0",
  "cw-storage-plus 1.2.0",
@@ -2304,7 +2303,6 @@ dependencies = [
  "cosmwasm-std",
  "cw-admin-factory",
  "cw-core",
- "cw-fund-distributor",
  "cw-hooks 2.6.0",
  "cw-multi-test",
  "cw-payroll-factory",

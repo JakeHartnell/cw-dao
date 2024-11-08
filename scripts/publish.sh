@@ -204,11 +204,6 @@ cd contracts/external/cw-admin-factory
 cargo hack publish --no-dev-deps --allow-dirty
 cd "$START_DIR"
 
-# TODO: uncomment once cleaned up and audited
-# cd contracts/distribution/cw-fund-distributor
-# cargo hack publish --no-dev-deps --allow-dirty
-# cd "$START_DIR"
-
 cd contracts/distribution/dao-rewards-distributor
 cargo hack publish --no-dev-deps --allow-dirty
 cd "$START_DIR"

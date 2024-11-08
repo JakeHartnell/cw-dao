@@ -30,7 +30,6 @@ dao-interface = { workspace = true }
 cw-paginate-storage = { workspace = true }
 
 [dev-dependencies]
-cw-fund-distributor = { workspace = true }
 dao-dao-core = { workspace = true, features = ["library"] }
 dao-testing = { workspace = true }
 cw-multi-test = { workspace = true }

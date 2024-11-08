@@ -2,19 +2,20 @@ use crate::msg::{
     CW20EntitlementResponse, CW20Response, DenomResponse, ExecuteMsg, InstantiateMsg, MigrateMsg,
     NativeEntitlementResponse, QueryMsg, TotalPowerResponse, VotingContractResponse,
 };
+use crate::ContractError;
 use cosmwasm_std::{to_json_binary, Addr, Binary, Coin, Uint128, WasmMsg};
 use cw20::Cw20Coin;
-use cw_fund_distributor::ContractError;
 use cw_multi_test::{next_block, App, BankSudo, Executor, SudoMsg};
 use dao_testing::contracts::{
-    cw20_base_contract, cw20_stake_contract, cw_fund_distributor_contract,
-    dao_voting_cw20_staked_contract,
+    cw20_base_contract, cw20_stake_contract, dao_voting_cw20_staked_contract,
 };
 
 use crate::msg::ExecuteMsg::{ClaimAll, ClaimCW20, ClaimNatives};
 use crate::msg::QueryMsg::TotalPower;
 use cosmwasm_std::StdError::GenericErr;
 use cw_utils::Duration;
+
+use super::cw_fund_distributor_contract;
 
 const CREATOR_ADDR: &str = "creator";
 const FEE_DENOM: &str = "ujuno";

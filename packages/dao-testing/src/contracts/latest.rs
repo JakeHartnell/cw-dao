@@ -244,16 +244,6 @@ pub fn dao_test_custom_factory_contract() -> Box<dyn Contract<Empty>> {
     Box::new(contract)
 }
 
-pub fn cw_fund_distributor_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        cw_fund_distributor::contract::execute,
-        cw_fund_distributor::contract::instantiate,
-        cw_fund_distributor::contract::query,
-    )
-    .with_migrate(cw_fund_distributor::contract::migrate);
-    Box::new(contract)
-}
-
 pub fn dao_rewards_distributor_contract() -> Box<dyn Contract<Empty>> {
     let contract = ContractWrapper::new(
         dao_rewards_distributor::contract::execute,

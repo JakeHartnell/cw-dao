@@ -42,7 +42,6 @@ serde_json = { workspace = true }
 
 btsg-ft-factory = { workspace = true }
 cw-admin-factory = { workspace = true }
-cw-fund-distributor = { workspace = true }
 cw-hooks = { workspace = true }
 cw-payroll-factory = { workspace = true }
 cw-token-swap = { workspace = true }

@@ -5,9 +5,10 @@ use cw20::{BalanceResponse, Cw20Coin};
 use cw_multi_test::{next_block, App, BankSudo, Executor, SudoMsg};
 use cw_utils::Duration;
 use dao_testing::contracts::{
-    cw20_base_contract, cw20_stake_contract, cw_fund_distributor_contract,
-    dao_voting_cw20_staked_contract,
+    cw20_base_contract, cw20_stake_contract, dao_voting_cw20_staked_contract,
 };
+
+use super::cw_fund_distributor_contract;
 
 const CREATOR_ADDR: &str = "creator";
 const FEE_DENOM: &str = "ujuno";
