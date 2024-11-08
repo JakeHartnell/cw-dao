@@ -17,7 +17,7 @@ pub enum ContractError {
     UnstakingDurationError(#[from] dao_voting::duration::UnstakingDurationError),
 
     #[error(transparent)]
-    NftClaimError(#[from] cw721_controllers::NftClaimError),
+    NftClaimError(#[from] nft_controllers::NftClaimError),
 
     #[error("Nothing to claim")]
     NothingToClaim {},

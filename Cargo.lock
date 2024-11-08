@@ -1635,17 +1635,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cw721-controllers"
-version = "2.6.0"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-storage-plus 1.2.0",
- "cw-utils 1.0.3",
- "thiserror",
-]
-
-[[package]]
 name = "cw721-roles"
 version = "2.6.0"
 dependencies = [
@@ -2535,8 +2524,7 @@ dependencies = [
  "cw2 1.1.2",
  "cw721 0.18.0",
  "cw721-base 0.18.0",
- "cw721-controllers 2.5.0",
- "cw721-controllers 2.6.0",
+ "cw721-controllers",
  "dao-dao-macros 2.6.0",
  "dao-hooks 2.6.0",
  "dao-interface 2.6.0",
@@ -2545,6 +2533,7 @@ dependencies = [
  "dao-test-custom-factory",
  "dao-testing",
  "dao-voting 2.6.0",
+ "nft-controllers",
  "osmosis-std",
  "osmosis-test-tube",
  "serde",
@@ -2564,8 +2553,7 @@ dependencies = [
  "cw-storage-plus 1.2.0",
  "cw-utils 1.0.3",
  "cw2 1.1.2",
- "cw721-controllers 2.5.0",
- "cw721-controllers 2.6.0",
+ "cw721-controllers",
  "dao-dao-macros 2.6.0",
  "dao-hooks 2.6.0",
  "dao-interface 2.6.0",
@@ -2574,6 +2562,7 @@ dependencies = [
  "dao-test-custom-factory",
  "dao-testing",
  "dao-voting 2.6.0",
+ "nft-controllers",
  "omniflix-std",
  "osmosis-test-tube",
  "prost 0.12.3",
@@ -3491,6 +3480,17 @@ dependencies = [
  "libc",
  "wasi",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "nft-controllers"
+version = "2.6.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus 1.2.0",
+ "cw-utils 1.0.3",
+ "thiserror",
 ]
 
 [[package]]

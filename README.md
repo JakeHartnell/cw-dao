@@ -11,7 +11,6 @@
 
 [![DAO DAO DAO](https://img.shields.io/badge/DAO%20DAO%20DAO-gray?logo=data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAAHAAAABwCAMAAADxPgR5AAAABGdBTUEAALGPC%2FxhBQAAAAFzUkdCAK7OHOkAAAAgY0hSTQAAeiYAAICEAAD6AAAAgOgAAHUwAADqYAAAOpgAABdwnLpRPAAAAR1QTFRF%2F%2F%2F%2F7%2FDw0NDRoaOjgoSFY2VmREdIJSgpFhgaBgkLNTc4sbKz0dHRREZINTc54ODgwMHCwMLCJSgpREZIoqOjNTc5VFZXoqOksbKz0dHRwcHCkpOUsbKyoqKjJikqc3V2g4SFoaGiwMDB7%2FDwoaKjFxkb39%2FfkZKTFhgaY2VnZGZnZGVn7u%2FvgoOEdHZ3BwoM%2Fv7%2BwcLCRUhJNjg5NTc4gYOENTg5cnR2c3V3sLGy7%2B%2Fv0NHR0NDRU1ZXoaOkgoSFY2VmREdIz9DQJSgqoaKiFhkaBgkL3%2BDgv8DBNDc5z8%2FQsLKzVVdY7u7uwMHBkpSUFxobZWZodHV3sbGyc3R2Njg6RUdJoKKiv8HBr7GykZOT3t%2Ff%2F%2F%2F%2FcnR1oaOjFOTQHAAAAA90Uk5T%2Fv7%2B%2Fv7%2B%2Fv7%2B%2Fv7%2B%2Fv7%2B6a2FXwAABrRJREFUaN7Vm%2BtjmzYQwNnWx7ZuUwq1jU0Dbp04LM0CTWu3pWnBdXHjuY9kXV8b5P%2F%2FM4aFAElIIAH5sPsWk%2BjnO%2B4hnS5KJCPe6Us%2FWCyX4SqRcLleBP7mVGoFRRGHvYzXK6asg0vQNXDH58ByaHy7O6DnhysBUWPQCXBHWwnLYtMaeKdHrLjsxwN9CDyoOBiNjFhTSTUvWwHv4qv1Yt1jWlyPe8LISiBuTM3wqtYBu9jvmqAR0LOKLz326t0B3CvMEQB54E7%2B59pINMh0rdauPGChnjhuK%2FdzpDWRAQK1EQ4i1co3yQbuoUAPjaiBZO9yXxcF%2Bpl6IGok0wAt4IsBrTbqpXJg84gM4O%2FIz0DUQqbIrIf1QMR74EWt5KjPJpaAiDeOWssfTCIN9Dvj5cTjKiDiGVHUIdHnA%2B92qB90Vrics8cDgrBbXqbjPmADPbVrXkY0J0xgGvD9LnmR%2B4ByHAx4J413r1NgdATN5jwsA9MCEYKoY5nahFELYNBlQJRd9ZgGgnRr0D0vcjXcqDlQbZ%2Bwq416QgJTj9mLrkSgUR2dAKYKXg0PGdXEgamCD68IGN2HKl5iQKjg4qp4SMVHBVC%2FWgUzFR%2FmQI2toLeJ%2B9vDbrhexBuvvYonGTCNQb10siBPhf1NaxUnCGgxXPSuyjhxXjZXUUWlGALVUgwCziH0cePMMIOFMQXuwLXwpQzuEdtummyPkNtsgRbtMn7Vqdpv4zY%2BBM4pi%2FrV53i%2FRX57tAUCyqJ%2BXefAb2HTSQKEae1x8f7qexWN3qM7h%2BktAcLK%2B4TauVWK3cRXXegqTxPgnIj6nlA7pomKz%2BBLTIBwiQmxk6oVvfFL%2FE55TqQZVQzYpHK6yy3we0XHbaSL9rgaVBb3xRb4g%2BLjPvNCuKnW1GuuKQHm6BPhLp49kSfubf%2FwuqJhFipbNByPomgYCLmN5ydrrS%2Br3fSGMseAVsk5ANW3yeUJ91jP7bS92j69qSyxxFYqSvnfApt60mdXPOqsRH6jFGhjYTinVg34Gb0UGK9rky0MxB8V%2BCvoI1oNrGE%2For2GlSqRnHDcdPvsJwJIWxT%2F9apn2WpInP8PEMsnz%2BlnE1ZFT%2BURRZoQQNxpbH6pDbgOjO%2BSyl0L6OKE0%2BBhseQWPlAb%2BUdFWNC2fEOExRJzx3kp8KcuEdRVZZ8f%2BGj1s%2B3Tn9PUpnPsloTin657NmNsAxjdjntJ9dYY%2FfgBBryRJu9LTmrrJn0b2L7tOlGeBhJA8ZKo60R5GmD2eS4DPBEuvKdF4Di3yC2GLQF0TgV7CvtYdk%2B2GBM8jDUZFd%2BKKRic4JsoapvoywAdobd45hjUNtHCvGYkA%2BQWPlzeqcj0qc8cJsABvtW3pYjHIjsnE9%2Fq7yVA4iVaUsD6c80s77LDxOaA%2FLhmNLFpLXFWOPPr%2FLiWekq20dS6JM6KWpWWr6cQOMJtakgCedd2W3%2BxsFo1xY7caVVCX3ViyxJNTgI4U%2FFa9Rr9AIE%2Bnmz8lbSwLmBfaUQxTjeRTxEw9dP3TVUsN428M40qxs9SH2W2voxVEwn7H26fJqXQe7P50A%2Fp3QbV%2BkJu876ho1a93wirvbBFi9qXc1zFUWc8B5Q6tAi4S6hodQUcEwru4S1oE1dxYnZrUFcttaDRyfAg2xTud8E7B3gMIv%2FJrxGgle0p%2Bmm3ixdoEPtHk7q3GJFH93F3L9ANcP8proIswqjRRVveX%2BRV0GHp7in1lNyobYkX%2BR4qJLbj2HVealT1qBPiRbHFIM83VReWxx3w3D5pXwKIwm%2BWfzB2WvpLdogzPc6l8z5FNBrF4%2FkuxTsHvGt1FH4FETTIOdhxLeU5H%2FmDA2OaKG%2FWvz36UDyuGo04LhGBKYPEJ4xYvPLwBwqGmYsZWhhJjODMKIflADNi%2FyiSRYb44fddn8ljDfBcZMd7wp0%2B1SHJSbvswE%2FzmCNKyHPsAxf%2FdHhoOlxoGJPTYQchlVArgblnBlPy86Hx%2BbwMDbUxNYs21VbcsRX2mJmOAl794tKPhrr%2F9nM2stsL4sGwfOkTlhJAHbAIePWrK9loLrakEoN0SV49zky3kELmODwBiAC3oZB38L%2B50jiTN2JYMe4JDnP%2FUL9M65mer65q1ItqBlrxrLZImBVQ74PGzm9SQCrFrONv71wG1dsQA%2BDmx6oVa4eSqaymLuJ%2Fvn79Nx1KfnO6eRn3yZ7numaARGDsWv%2FsNCoWjYHJu7SEkvdSZJJYdHR%2BZH1yKqG9sdisrcQ%2FB4DdwwTKovbigfCkhiIpv9y6dv3X37JcutQCfzCUGgtR%2FgO61zuwRnnviwAAAABJRU5ErkJggg%3D%3D)](https://daodao.zone/dao/juno10h0hc64jv006rr8qy0zhlu4jsxct8qwa0vtaleayh0ujz0zynf2s2r7v8q)
 
-
 This is a collection of smart contracts for building composable, modular, and upgradable DAOs.
 
 For a detailed look at how these contracts work, see [our wiki](https://github.com/DA0-DA0/dao-contracts/wiki/DAO-DAO-Contracts-Design).
@@ -37,42 +36,6 @@ The best way to get started is to create a DAO! We maintain an [open source](htt
 If you believe you have found a problem, please [let us know](SECURITY.md).
 
 DAO DAO has been audited by [Oak Security](https://www.oaksecurity.io/) on multiple occasions. You can find all the audit reports [here](https://github.com/oak-security/audit-reports/tree/master/DAO%20DAO).
-
-`v2.3.0` is the most recent DAO DAO release; only new feautres related to tokenfactory and improved NFT DAOs have been [audited](https://github.com/oak-security/audit-reports/blob/master/DAO%20DAO/2023-10-16%20Audit%20Report%20-%20DAO%20DAO%20Updates%20v1.0.pdf). Our most recently [full audited](https://github.com/oak-security/audit-reports/blob/master/DAO%20DAO/2023-02-06%20Audit%20Report%20-%20DAO%20DAO%202%20v1.0.pdf) release is `v2.0.0`. Vesting and payroll were added and [audited](https://github.com/oak-security/audit-reports/blob/master/DAO%20DAO/2023-03-22%20Audit%20Report%20-%20DAO%20DAO%20Vesting%20and%20Payroll%20Factory%20v1.0.pdf) in `v2.1.0`.
-
-Audited contracts include:
-- [cw-payroll-factory](https://crates.io/crates/cw-payroll-factory)
-- [cw-tokenfactory-issuer](https://crates.io/crates/cw-tokenfactory-issuer)
-- [cw-token-swap](https://crates.io/crates/cw-token-swap)
-- [cw-vesting](https://crates.io/crates/cw-vesting)
-- [dao-dao-core](https://crates.io/crates/dao-dao-core)
-- [dao-pre-propose-approval-single](https://crates.io/crates/dao-pre-propose-approval-single)
-- [dao-pre-propose-approver](https://crates.io/crates/dao-pre-propose-approver)
-- [dao-pre-propose-multiple](https://crates.io/crates/dao-pre-propose-multiple)
-- [dao-pre-propose-single](https://crates.io/crates/dao-pre-propose-single)
-- [dao-proposal-condorcet](https://crates.io/crates/dao-proposal-condorcet)
-- [dao-proposal-multiple](https://crates.io/crates/dao-proposal-multiple)
-- [dao-proposal-single](https://crates.io/crates/dao-proposal-single)
-- [cw20-stake](https://crates.io/crates/cw20-stake)
-- [cw20-stake-external-rewards](https://crates.io/crates/cw20-stake-external-rewards)
-- [cw20-stake-reward-distributor](https://crates.io/crates/cw20-stake-reward-distributor)
-- [dao-voting-cw4](https://crates.io/crates/dao-voting-cw4)
-- [dao-voting-cw20-staked](https://crates.io/crates/dao-voting-cw20-staked)
-- [dao-voting-cw721-staked](https://crates.io/crates/dao-voting-cw721-staked)
-- [dao-voting-token-staked](https://crates.io/crates/dao-voting-token-staked)
-
-Audited packages include:
-- [cw721-controllers](https://crates.io/crates/cw721-controllers)
-- [cw-denom](https://crates.io/crates/cw-denom)
-- [cw-hooks](https://crates.io/crates/cw-hooks)
-- [cw-paginate-storage](https://crates.io/crates/cw-paginate-storage)
-- [cw-stake-tracker](https://crates.io/crates/cw-stake-tracker)
-- [cw-wormhole](https://crates.io/crates/cw-wormhole)
-- [dao-dao-macros](https://crates.io/crates/dao-dao-macros)
-- [dao-hooks](https://crates.io/crates/dao-hooks)
-- [dao-interface](https://crates.io/crates/dao-interface)
-- [dao-pre-propose-based](https://crates.io/crates/dao-pre-propose-based)
-- [dao-voting](https://crates.io/crates/dao-voting)
 
 ## Why?
 

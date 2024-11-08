@@ -50,7 +50,7 @@ cd packages/cw-paginate-storage
 cargo publish
 cd "$START_DIR"
 
-cd packages/cw721-controllers
+cd packages/nft-controllers
 cargo publish
 cd "$START_DIR"
 
@@ -93,7 +93,7 @@ cd "$START_DIR"
 sleep 120
 
 cd contracts/test/dao-voting-cw20-balance
-cargo publish
+cargo hack publish --no-dev-deps --allow-dirty
 cd "$START_DIR"
 
 cd contracts/test/dao-proposal-hook-counter

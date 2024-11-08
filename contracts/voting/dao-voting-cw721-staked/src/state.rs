@@ -1,10 +1,10 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Binary, Empty, StdError, StdResult, Storage, Uint128};
-use cw721_controllers::NftClaims;
 use cw_hooks::Hooks;
 use cw_storage_plus::{Item, Map, SnapshotItem, SnapshotMap, Strategy};
 use cw_utils::Duration;
 use dao_voting::threshold::ActiveThreshold;
+use nft_controllers::NftClaims;
 
 use crate::ContractError;
 

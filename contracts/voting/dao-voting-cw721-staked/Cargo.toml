@@ -30,7 +30,6 @@ cw-controllers = { workspace = true }
 cw-hooks = { workspace = true }
 cw721 = { workspace = true }
 cw721-base = { workspace = true, features = ["library"] }
-cw721-controllers = { workspace = true }
 cw721-controllers-v250 = { workspace = true }
 cw-utils = { workspace = true }
 cw2 = { workspace = true }
@@ -38,6 +37,7 @@ dao-dao-macros = { workspace = true }
 dao-hooks = { workspace = true }
 dao-interface = { workspace = true }
 dao-voting = { workspace = true }
+nft-controllers = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
