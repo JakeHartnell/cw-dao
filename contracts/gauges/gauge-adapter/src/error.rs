@@ -14,6 +14,9 @@ pub enum ContractError {
     #[error("{0}")]
     DenomError(#[from] DenomError),
 
+    #[error("{0}")]
+    Ownership(#[from] cw_ownable::OwnershipError),
+
     #[error("Operation unauthorized - only admin can release deposits")]
     Unauthorized {},
 
@@ -28,4 +31,7 @@ pub enum ContractError {
 
     #[error("No deposit was required, therefore no deposit can be returned")]
     NoDepositToRefund {},
+
+    #[error("Deposit required, cannot create submission.")]
+    DepositRequired {},
 }

@@ -1,6 +1,7 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{CosmosMsg, Decimal, Uint128};
 use cw4::MemberChangedHookMsg;
+use cw_ownable::{cw_ownable_execute, cw_ownable_query};
 use dao_hooks::{nft_stake::NftStakeChangedHookMsg, stake::StakeChangedHookMsg};
 
 use crate::state::{Reset, Vote};
@@ -11,9 +12,9 @@ type GaugeId = u64;
 pub struct InstantiateMsg {
     /// Address of contract to that contains all voting powers (where we query)
     pub voting_powers: String,
-    /// Addres that will call voting power change hooks (often same as voting power contract)
+    /// Address that will call voting power change hooks (often same as voting power contract)
     pub hook_caller: String,
-    /// Address that can add new gauges or stop them
+    /// Optional Address that can add new gauges or stop them
     pub owner: String,
     /// Allow attaching multiple adaptors during instantiation.
     /// Important, as instantiation and CreateGauge both come from DAO proposals
@@ -39,8 +40,11 @@ pub struct GaugeConfig {
     pub max_available_percentage: Option<Decimal>,
     /// If set, the gauge can be reset periodically, every `reset_epoch` seconds.
     pub reset_epoch: Option<u64>,
+    /// If set, the gauge will disable itself after this many epochs. This count will not be reset if `reset_epoch` is set.
+    pub total_epochs: Option<u64>,
 }
 
+#[cw_ownable_execute]
 #[cw_serde]
 pub enum ExecuteMsg {
     /// Updates gauge voting power in Token DAOs when a user stakes or unstakes
@@ -61,6 +65,7 @@ pub enum ExecuteMsg {
         min_percent_selected: Option<Decimal>,
         max_options_selected: Option<u32>,
         max_available_percentage: Option<Decimal>,
+        epoch_limit: Option<u64>,
     },
     /// Stops a given gauge, meaning it will not execute any more messages,
     /// Or receive any more updates on MemberChangedHook.
@@ -94,37 +99,47 @@ pub enum ExecuteMsg {
 pub struct CreateGaugeReply {
     /// Id of the gauge that was just created
     pub id: u64,
+    pub addr: String,
 }
 
 /// Queries the gauge exposes
+#[cw_ownable_query]
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
+    /// General contract info
     #[returns(dao_interface::voting::InfoResponse)]
     Info {},
+    /// Returns details for a specific gauge.
     #[returns(GaugeResponse)]
     Gauge { id: u64 },
+    /// List all gauges
     #[returns(ListGaugesResponse)]
     ListGauges {
         start_after: Option<u64>,
         limit: Option<u32>,
     },
+    /// Returns the vote for a given voter
     #[returns(VoteResponse)]
     Vote { gauge: u64, voter: String },
+    /// Returns a list of all unexpired votes for a specific gauge-id
     #[returns(ListVotesResponse)]
     ListVotes {
         gauge: u64,
         start_after: Option<String>,
         limit: Option<u32>,
     },
+    /// Returns a list of all options available to vote for a specific gauge-id
     #[returns(ListOptionsResponse)]
     ListOptions {
         gauge: u64,
         start_after: Option<String>,
         limit: Option<u32>,
     },
+    /// Returns the selected messages that were determined by voting
     #[returns(SelectedSetResponse)]
     SelectedSet { gauge: u64 },
+    /// Returns the last selected messages that were executed by the DAO
     #[returns(LastExecutedSetResponse)]
     LastExecutedSet { gauge: u64 },
 }
@@ -139,6 +154,8 @@ pub struct GaugeResponse {
     pub adapter: String,
     /// Frequency (in seconds) the gauge executes messages, typically something like 7*86400
     pub epoch_size: u64,
+    /// Total epoch duration
+    pub total_epochs: Option<u64>,
     /// Minimum percentage of votes needed by a given option to be in the selected set.
     /// If unset, there is no minimum percentage, just the `max_options_selected` limit.
     pub min_percent_selected: Option<Decimal>,

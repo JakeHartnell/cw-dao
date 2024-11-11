@@ -48,6 +48,7 @@ fn add_option() {
             (1000, "ujuno"),
             None,
             None,
+            None,
         )
         .unwrap();
 
@@ -100,7 +101,6 @@ fn add_option() {
 
 #[test]
 fn remove_option() {
-    let owner = "owner";
     let voter1 = "voter1";
     let voter2 = "voter2";
     let mut suite = SuiteBuilder::new()
@@ -111,7 +111,7 @@ fn remove_option() {
     suite
         .propose_update_proposal_module(voter1.to_string(), None)
         .unwrap();
-
+    let dao = suite.core.clone();
     suite.next_block();
     let proposal = suite.list_proposals().unwrap()[0];
     suite
@@ -133,6 +133,7 @@ fn remove_option() {
             gauge_contract.clone(),
             &[voter1, voter2],
             (1000, "ujuno"),
+            None,
             None,
             None,
         )
@@ -175,7 +176,7 @@ fn remove_option() {
 
     // owner can remove an option that has been added already
     suite
-        .remove_option(&gauge_contract, owner, gauge_id, "addedoption1")
+        .remove_option(&gauge_contract, dao.clone(), gauge_id, "addedoption1")
         .unwrap();
 
     // Anyone else cannot remove options
@@ -183,7 +184,10 @@ fn remove_option() {
         .remove_option(&gauge_contract, voter1, gauge_id, "addedoption2")
         .unwrap_err();
 
-    assert_eq!(ContractError::Unauthorized {}, err.downcast().unwrap());
+    assert_eq!(
+        ContractError::Ownership(cw_ownable::OwnershipError::NotOwner),
+        err.downcast().unwrap()
+    );
 
     let options = suite.query_list_options(&gauge_contract, gauge_id).unwrap();
     // one has been removed
@@ -200,7 +204,7 @@ fn remove_option() {
 
     // owner can remove an option that is no longer valid
     suite
-        .remove_option(&gauge_contract, owner, gauge_id, "addedoption2")
+        .remove_option(&gauge_contract, dao, gauge_id, "addedoption2")
         .unwrap();
 
     // Both options are now removed
@@ -280,6 +284,7 @@ fn vote_for_option() {
             gauge_contract.clone(),
             &[voter1, voter2],
             (1000, "ujuno"),
+            None,
             None,
             None,
         )
@@ -423,6 +428,7 @@ fn remove_vote() {
             (1000, "ujuno"),
             None,
             None,
+            None,
         )
         .unwrap();
 
@@ -493,7 +499,13 @@ fn votes_stays_the_same_after_execution() {
 
     suite.next_block();
     let gauge_config = suite
-        .instantiate_adapter_and_return_config(&[voter1, voter2], reward_to_distribute, None, None)
+        .instantiate_adapter_and_return_config(
+            &[voter1, voter2],
+            reward_to_distribute,
+            None,
+            None,
+            None,
+        )
         .unwrap();
     suite
         .propose_update_proposal_module(voter1.to_string(), vec![gauge_config])
@@ -617,6 +629,7 @@ fn vote_for_max_capped_option() {
             (1000, "ujuno"),
             Some(Decimal::percent(10)),
             None,
+            None,
         )
         .unwrap();
 
@@ -730,6 +743,7 @@ fn membership_voting_power_change() {
             gauge_contract.clone(),
             &[voter1, voter2],
             (1000, "ujuno"),
+            None,
             None,
             None,
         )
@@ -911,6 +925,7 @@ fn token_staking_voting_power_change() {
             gauge_contract.clone(),
             &[voter1, voter2],
             (1000, "ujuno"),
+            None,
             None,
             None,
         )
@@ -1109,6 +1124,7 @@ fn nft_staking_voting_power_change() {
             gauge_contract.clone(),
             &[voter1, voter2],
             (1000, "ujuno"),
+            None,
             None,
             None,
         )

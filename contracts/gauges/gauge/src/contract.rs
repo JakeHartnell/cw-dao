@@ -10,6 +10,7 @@ use dao_interface::{
     msg::ExecuteMsg as DaoExecuteMsg,
     voting::{Query as DaoQuery, VotingPowerAtHeightResponse},
 };
+use execute::execute_update_owner;
 
 use crate::msg::{
     AdapterQueryMsg, AllOptionsResponse, CheckOptionResponse, ExecuteMsg, GaugeConfig,
@@ -34,14 +35,13 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    cw_ownable::initialize_owner(deps.storage, deps.api, Some(&msg.owner))?;
 
     let voting_powers = deps.api.addr_validate(&msg.voting_powers)?;
     let hook_caller = deps.api.addr_validate(&msg.hook_caller)?;
-    let owner = deps.api.addr_validate(&msg.owner)?;
     let config = Config {
         voting_powers,
         hook_caller,
-        owner,
         dao_core: info.sender,
     };
     CONFIG.save(deps.storage, &config)?;
@@ -72,6 +72,7 @@ pub fn execute(
         ExecuteMsg::CreateGauge(options) => execute::create_gauge(deps, env, info.sender, options),
         ExecuteMsg::UpdateGauge {
             gauge_id,
+            epoch_limit,
             epoch_size,
             min_percent_selected,
             max_options_selected,
@@ -81,6 +82,7 @@ pub fn execute(
             info.sender,
             gauge_id,
             epoch_size,
+            epoch_limit,
             min_percent_selected,
             max_options_selected,
             max_available_percentage,
@@ -99,15 +101,21 @@ pub fn execute(
             execute::place_votes(deps, env, info.sender, gauge, votes)
         }
         ExecuteMsg::Execute { gauge } => execute::execute(deps, env, gauge),
+        ExecuteMsg::UpdateOwnership(action) => execute_update_owner(deps, info, env, action),
     }
 }
 
 mod execute {
+    use cosmwasm_std::CosmosMsg;
     use cw4::MemberDiff;
+    use cw_utils::nonpayable;
     use dao_hooks::{nft_stake::NftStakeChangedHookMsg, stake::StakeChangedHookMsg};
 
     use super::*;
-    use crate::state::{remove_tally, update_tallies, Reset, Vote};
+    use crate::{
+        msg::CreateGaugeReply,
+        state::{remove_tally, update_tallies, Reset, Vote},
+    };
     use std::collections::HashMap;
 
     pub fn member_changed(
@@ -366,16 +374,14 @@ mod execute {
         sender: Addr,
         options: GaugeConfig,
     ) -> Result<Response, ContractError> {
-        let config = CONFIG.load(deps.storage)?;
-        if sender != config.owner {
-            return Err(ContractError::Unauthorized {});
-        }
+        cw_ownable::assert_owner(deps.storage, &sender)?;
 
         let adapter = attach_gauge(deps, env, options)?;
 
         Ok(Response::new()
             .add_attribute("action", "create_gauge")
-            .add_attribute("adapter", adapter))
+            .add_attribute("gauge-id", adapter.id.to_string())
+            .add_attribute("adapter", adapter.addr))
     }
 
     pub fn attach_gauge(
@@ -389,8 +395,9 @@ mod execute {
             max_options_selected,
             max_available_percentage,
             reset_epoch,
+            total_epochs,
         }: GaugeConfig,
-    ) -> Result<Addr, ContractError> {
+    ) -> Result<CreateGaugeReply, ContractError> {
         let adapter = deps.api.addr_validate(&adapter)?;
         // gauge parameter validation
         ensure!(epoch_size > 60u64, ContractError::EpochSizeTooShort {});
@@ -408,6 +415,7 @@ mod execute {
             title,
             adapter: adapter.clone(),
             epoch: epoch_size,
+            count: Some(0),
             min_percent_selected,
             max_options_selected,
             max_available_percentage,
@@ -419,6 +427,7 @@ mod execute {
                 reset_each: r,
                 next: env.block.time.plus_seconds(r).seconds(),
             }),
+            total_epoch: total_epochs,
         };
         let last_id: GaugeId = fetch_last_id(deps.storage)?;
         GAUGES.save(deps.storage, last_id, &gauge)?;
@@ -434,28 +443,37 @@ mod execute {
             Ok::<_, ContractError>(())
         })?;
 
-        Ok(adapter)
+        Ok(CreateGaugeReply {
+            id: last_id,
+            addr: adapter.to_string(),
+        })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn update_gauge(
         deps: DepsMut,
         sender: Addr,
         gauge_id: u64,
+        epoch_limit: Option<u64>,
         epoch_size: Option<u64>,
         min_percent_selected: Option<Decimal>,
         max_options_selected: Option<u32>,
         max_available_percentage: Option<Decimal>,
     ) -> Result<Response, ContractError> {
-        let config = CONFIG.load(deps.storage)?;
-        if sender != config.owner {
-            return Err(ContractError::Unauthorized {});
-        }
+        cw_ownable::assert_owner(deps.storage, &sender)?;
 
         let mut gauge = GAUGES.load(deps.storage, gauge_id)?;
+        // updated epoch size must be greater than 60 seconds
         if let Some(epoch_size) = epoch_size {
             ensure!(epoch_size > 60u64, ContractError::EpochSizeTooShort {});
             gauge.epoch = epoch_size;
         }
+        // updated epoch limit count must not already have passed
+        if let Some(epoch_limit) = epoch_limit {
+            let e = gauge.gauge_epoch()?;
+            ensure!(e < epoch_limit, ContractError::EpochLimitTooShort {})
+        }
+        // min_percent_selected percent must be less than 100%. None if 0.
         if let Some(min_percent_selected) = min_percent_selected {
             if min_percent_selected.is_zero() {
                 gauge.min_percent_selected = None
@@ -467,6 +485,7 @@ mod execute {
                 gauge.min_percent_selected = Some(min_percent_selected)
             };
         }
+        // max_options_selected must be at least 1
         if let Some(max_options_selected) = max_options_selected {
             ensure!(
                 max_options_selected > 0,
@@ -474,6 +493,7 @@ mod execute {
             );
             gauge.max_options_selected = max_options_selected;
         }
+        // max_available_percentage must be less than 100%. None if 0.
         if let Some(max_available_percentage) = max_available_percentage {
             if max_available_percentage.is_zero() {
                 gauge.max_available_percentage = None
@@ -495,10 +515,7 @@ mod execute {
         sender: Addr,
         gauge_id: GaugeId,
     ) -> Result<Response, ContractError> {
-        let config = CONFIG.load(deps.storage)?;
-        if sender != config.owner {
-            return Err(ContractError::Unauthorized {});
-        }
+        cw_ownable::assert_owner(deps.storage, &sender)?;
 
         let gauge = GAUGES.load(deps.storage, gauge_id)?;
         let gauge = Gauge {
@@ -524,10 +541,7 @@ mod execute {
         };
 
         // only owner can remove option for now
-        if sender != CONFIG.load(deps.storage)?.owner {
-            return Err(ContractError::Unauthorized {});
-        }
-
+        cw_ownable::assert_owner(deps.storage, &sender)?;
         remove_tally(deps.storage, gauge_id, &option)?;
 
         Ok(Response::new()
@@ -755,6 +769,7 @@ mod execute {
 
     pub fn execute(deps: DepsMut, env: Env, gauge_id: u64) -> Result<Response, ContractError> {
         let mut gauge = GAUGES.load(deps.storage, gauge_id)?;
+        let mut msgs = vec![];
 
         if gauge.is_stopped {
             return Err(ContractError::GaugeStopped(gauge_id));
@@ -796,12 +811,25 @@ mod execute {
             &AdapterQueryMsg::SampleGaugeMsgs { selected },
         )?;
 
+        // Adds msgs from query to response
+        msgs.extend(execute_messages.execute);
+
+        // increments epoch count
+        gauge.count = gauge.increment_gauge_count()?;
+
+        // Will add a stop_gauge msg to list of msgs for DAO if gauge config has total_epochs set
+        if gauge.will_reach_epoch_limit() {
+            msgs.push(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: env.contract.address.to_string(),
+                msg: to_json_binary(&ExecuteMsg::StopGauge { gauge: gauge_id })?,
+                funds: vec![],
+            }))
+        }
+
         let config = CONFIG.load(deps.storage)?;
         let execute_msg = WasmMsg::Execute {
             contract_addr: config.dao_core.to_string(),
-            msg: to_json_binary(&DaoExecuteMsg::ExecuteProposalHook {
-                msgs: execute_messages.execute,
-            })?,
+            msg: to_json_binary(&DaoExecuteMsg::ExecuteProposalHook { msgs })?,
             funds: vec![],
         };
 
@@ -810,6 +838,21 @@ mod execute {
         Ok(Response::new()
             .add_attribute("action", "execute_tally")
             .add_message(execute_msg))
+    }
+
+    pub fn execute_update_owner(
+        deps: DepsMut,
+        info: MessageInfo,
+        env: Env,
+        action: cw_ownable::Action,
+    ) -> Result<Response, ContractError> {
+        nonpayable(&info)?;
+
+        // Update the current contract owner. Note, this is a two step process, the
+        // new owner must accept this ownership transfer. First the owner specifies
+        // the new owner, then the new owner must accept.
+        let ownership = cw_ownable::update_ownership(deps, &env.block, &info.sender, action)?;
+        Ok(Response::new().add_attributes(ownership.into_attributes()))
     }
 }
 
@@ -848,6 +891,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::LastExecutedSet { gauge } => {
             Ok(to_json_binary(&query::last_executed_set(deps, gauge)?)?)
         }
+        QueryMsg::Ownership {} => to_json_binary(&cw_ownable::get_ownership(deps.storage)?),
     }
 }
 
@@ -874,6 +918,7 @@ mod query {
             is_stopped: gauge.is_stopped,
             next_epoch: gauge.next_epoch,
             reset: gauge.reset,
+            total_epochs: gauge.total_epoch,
         }
     }
 

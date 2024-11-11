@@ -19,6 +19,7 @@ library = []
 cosmwasm-schema = { workspace = true }
 cosmwasm-std = { workspace = true }
 dao-interface = { workspace = true }
+cw-ownable = { workspace = true }
 cw-storage-plus = { workspace = true }
 cw-utils = { workspace = true }
 cw2 = { workspace = true }

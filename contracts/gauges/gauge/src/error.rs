@@ -1,10 +1,17 @@
 use cosmwasm_std::{Decimal, StdError};
+use cw_utils::PaymentError;
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
-    #[error("{0}")]
+    #[error(transparent)]
     Std(#[from] StdError),
+
+    #[error(transparent)]
+    Ownership(#[from] cw_ownable::OwnershipError),
+
+    #[error(transparent)]
+    Payment(#[from] PaymentError),
 
     #[error("Unauthorized")]
     Unauthorized {},
@@ -51,6 +58,9 @@ pub enum ContractError {
 
     #[error("Epoch size must be bigger then 60 seconds")]
     EpochSizeTooShort {},
+
+    #[error("Epoch limit must be bigger then current epoch")]
+    EpochLimitTooShort {},
 
     #[error("Minimum percent selected parameter needs to be smaller then 1.0")]
     MinPercentSelectedTooBig {},

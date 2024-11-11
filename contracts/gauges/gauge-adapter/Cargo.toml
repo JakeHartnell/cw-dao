@@ -25,17 +25,13 @@ cw-storage-plus = { workspace = true }
 cw2 = { workspace = true }
 cw20 = { workspace = true }
 cw-denom = { workspace = true }
-cw-orch = { workspace = true }
+cw-ownable = { workspace = true }
 cw-utils = { workspace = true }
 semver = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
-abstract-cw-plus-interface = "2.0.1"
-abstract-cw20 = "2.0.0"
-abstract-cw20-base = "2.0.0"
 anyhow = { workspace = true }
 cw-multi-test = { workspace = true }
 cw20 = { workspace = true }
 cw20-base = { workspace = true }
-cw-orch-core = { workspace = true }

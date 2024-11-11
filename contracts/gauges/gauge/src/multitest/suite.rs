@@ -518,7 +518,7 @@ impl Suite {
                         msg: to_json_binary(&InstantiateMsg {
                             voting_powers: self.voting.to_string(),
                             hook_caller: self.group_contract.to_string(),
-                            owner: self.owner.clone(),
+                            owner: self.core.to_string(),
                             gauges: gauge_config.into(),
                         })?,
                         admin: Some(Admin::Address {
@@ -559,7 +559,7 @@ impl Suite {
                         msg: to_json_binary(&InstantiateMsg {
                             voting_powers: self.voting.to_string(),
                             hook_caller: Addr::unchecked(hook_caller).to_string(),
-                            owner: self.owner.clone(),
+                            owner: self.core.to_string(),
                             gauges: gauge_config.into(),
                         })?,
                         admin: Some(Admin::Address {
@@ -616,16 +616,18 @@ impl Suite {
         to_distribute: (u128, &str),
         max_available_percentage: impl Into<Option<Decimal>>,
         reset_epoch: impl Into<Option<u64>>,
+        epoch_limit: impl Into<Option<u64>>,
     ) -> AnyResult<Addr> {
         let option = self.instantiate_adapter_and_return_config(
             options,
             to_distribute,
             max_available_percentage,
             reset_epoch,
+            epoch_limit,
         )?;
         let gauge_adapter = option.adapter.clone();
         self.app.execute_contract(
-            Addr::unchecked(&self.owner),
+            Addr::unchecked(&self.core),
             gauge_contract,
             &ExecuteMsg::CreateGauge(option),
             &[],
@@ -639,17 +641,18 @@ impl Suite {
         to_distribute: (u128, &str),
         max_available_percentage: impl Into<Option<Decimal>>,
         reset_epoch: impl Into<Option<u64>>,
+        total_epochs: impl Into<Option<u64>>,
     ) -> AnyResult<GaugeConfig> {
         let gauge_adapter = self.app.instantiate_contract(
             self.gauge_adapter_code_id,
-            Addr::unchecked(&self.owner),
+            Addr::unchecked(&self.core),
             &AdapterInstantiateMsg {
                 options: options.iter().map(|&s| s.into()).collect(),
                 to_distribute: coin(to_distribute.0, to_distribute.1),
             },
             &[],
             "gauge adapter",
-            None,
+            Some(self.core.to_string()),
         )?;
 
         Ok(GaugeConfig {
@@ -660,6 +663,7 @@ impl Suite {
             max_options_selected: 10,
             max_available_percentage: max_available_percentage.into(),
             reset_epoch: reset_epoch.into(),
+            total_epochs: total_epochs.into(),
         })
     }
 
@@ -669,6 +673,7 @@ impl Suite {
         sender: &str,
         gauge_contract: Addr,
         gauge_id: u64,
+        epoch_limit: impl Into<Option<u64>>,
         epoch_size: impl Into<Option<u64>>,
         min_percent_selected: Option<Decimal>,
         max_options_selected: impl Into<Option<u32>>,
@@ -683,6 +688,7 @@ impl Suite {
                 min_percent_selected,
                 max_options_selected: max_options_selected.into(),
                 max_available_percentage: max_available_percentage.into(),
+                epoch_limit: epoch_limit.into(),
             },
             &[],
         )

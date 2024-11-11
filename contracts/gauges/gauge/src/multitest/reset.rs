@@ -27,6 +27,7 @@ fn basic_gauge_reset() {
             reward_to_distribute,
             None,
             RESET_EPOCH,
+            None,
         )
         .unwrap();
     suite
@@ -48,7 +49,6 @@ fn basic_gauge_reset() {
         .unwrap();
     let proposal_modules = suite.query_proposal_modules().unwrap();
     let gauge_contract = proposal_modules[1].clone();
-
     let gauge_id = 0;
 
     // vote for one of the options in gauge
@@ -179,6 +179,7 @@ fn gauge_migrate_with_reset() {
             (1000, "ujuno"),
             None,
             None,
+            None,
         )
         .unwrap();
 
@@ -197,6 +198,7 @@ fn gauge_migrate_with_reset() {
             is_stopped: false,
             next_epoch: suite.current_time() + 7 * 86400,
             reset: None,
+            total_epochs: None,
         }
     );
 
@@ -262,6 +264,7 @@ fn gauge_migrate_with_reset() {
                 reset_each: RESET_EPOCH,
                 next: suite.current_time() + 100,
             }),
+            total_epochs: None,
         }
     );
 }
@@ -295,6 +298,7 @@ fn gauge_migrate_keeps_last_reset() {
             (1000, "ujuno"),
             None,
             Some(RESET_EPOCH),
+            None,
         )
         .unwrap();
     let gauge_id = 0;
@@ -346,6 +350,7 @@ fn partial_reset() {
             reward_to_distribute,
             None,
             RESET_EPOCH,
+            None,
         )
         .unwrap();
     suite
@@ -414,4 +419,183 @@ fn partial_reset() {
     suite
         .reset_gauge("someone", &gauge_contract, gauge_id, 1)
         .unwrap();
+}
+
+#[test]
+fn test_epoch_limit() -> anyhow::Result<()> {
+    let voter1 = "voter1";
+    let voter2 = "voter2";
+    let reward_to_distribute = (2000, "ujuno");
+    let mut suite = SuiteBuilder::new()
+        .with_voting_members(&[(voter1, 100), (voter2, 100)])
+        .with_core_balance((4000, "ujuno"))
+        .build();
+    suite.next_block();
+    let gauge_config = suite
+        .instantiate_adapter_and_return_config(
+            &[voter1, voter2],
+            reward_to_distribute,
+            None,
+            None,
+            Some(2),
+        )
+        .unwrap();
+
+    suite
+        .propose_update_proposal_module(voter1.to_string(), vec![gauge_config])
+        .unwrap();
+
+    suite.next_block();
+    let proposal = suite.list_proposals().unwrap()[0];
+    suite
+        .place_vote_single(voter1, proposal, Vote::Yes)
+        .unwrap();
+    suite
+        .place_vote_single(voter2, proposal, Vote::Yes)
+        .unwrap();
+
+    suite.next_block();
+    suite
+        .execute_single_proposal(voter1.to_string(), proposal)
+        .unwrap();
+    let proposal_modules = suite.query_proposal_modules().unwrap();
+    let gauge_contract = proposal_modules[1].clone();
+
+    let gauge_id = 0;
+
+    // vote for the gauge options
+    suite
+        .place_vote(
+            &gauge_contract,
+            voter1.to_owned(),
+            gauge_id,
+            Some(voter1.to_owned()),
+        )
+        .unwrap();
+    suite
+        .place_vote(
+            &gauge_contract,
+            voter2.to_owned(),
+            gauge_id,
+            Some(voter2.to_owned()),
+        )
+        .unwrap();
+
+    // advance to 1st epoch time
+    suite.advance_time(EPOCH);
+    suite
+        .execute_options(&gauge_contract, voter1, gauge_id)
+        .unwrap();
+    // advance to 2nd epoch time
+    suite.advance_time(EPOCH);
+    suite
+        .execute_options(&gauge_contract, voter1, gauge_id)
+        .unwrap();
+    // confirm gauge is now turned off
+    let res = suite.query_gauge(gauge_contract, gauge_id)?;
+    assert!(res.is_stopped);
+    Ok(())
+}
+
+#[test]
+fn test_epoch_limit_and_reset_epoch() -> anyhow::Result<()> {
+    let voter1 = "voter1";
+    let voter2 = "voter2";
+    let reward_to_distribute = (2000, "ujuno");
+    let mut suite = SuiteBuilder::new()
+        .with_voting_members(&[(voter1, 100), (voter2, 100)])
+        .with_core_balance((4000, "ujuno"))
+        .build();
+    suite.next_block();
+    let gauge_config = suite
+        .instantiate_adapter_and_return_config(
+            &[voter1, voter2],
+            reward_to_distribute,
+            None,
+            RESET_EPOCH,
+            Some(4),
+        )
+        .unwrap();
+
+    suite
+        .propose_update_proposal_module(voter1.to_string(), vec![gauge_config])
+        .unwrap();
+
+    suite.next_block();
+    let proposal = suite.list_proposals().unwrap()[0];
+    suite
+        .place_vote_single(voter1, proposal, Vote::Yes)
+        .unwrap();
+    suite
+        .place_vote_single(voter2, proposal, Vote::Yes)
+        .unwrap();
+
+    suite.next_block();
+    suite
+        .execute_single_proposal(voter1.to_string(), proposal)
+        .unwrap();
+    let proposal_modules = suite.query_proposal_modules().unwrap();
+    let gauge_contract = proposal_modules[1].clone();
+
+    let gauge_id = 0;
+
+    // vote for the gauge options
+    suite
+        .place_vote(
+            &gauge_contract,
+            voter1.to_owned(),
+            gauge_id,
+            Some(voter1.to_owned()),
+        )
+        .unwrap();
+    suite
+        .place_vote(
+            &gauge_contract,
+            voter2.to_owned(),
+            gauge_id,
+            Some(voter2.to_owned()),
+        )
+        .unwrap();
+
+    // advance to 1st epoch time
+    suite.advance_time(EPOCH);
+    suite
+        .execute_options(&gauge_contract, voter1, gauge_id)
+        .unwrap();
+    // advance to 2nd epoch time
+    suite.advance_time(EPOCH);
+    suite
+        .execute_options(&gauge_contract, voter1, gauge_id)
+        .unwrap();
+
+    // move forward in time for epoch limit
+    suite.advance_time(RESET_EPOCH);
+
+    // finish resetting
+    suite
+        .reset_gauge("someone", &gauge_contract, gauge_id, 10)
+        .unwrap();
+
+    // advance to 3rd epoch time
+    suite.advance_time(EPOCH);
+    suite
+        .execute_options(&gauge_contract, voter1, gauge_id)
+        .unwrap();
+    // advance to 4th epoch time
+    suite.advance_time(EPOCH);
+    suite
+        .execute_options(&gauge_contract, voter1, gauge_id)
+        .unwrap();
+
+    // confirm gauge is now turned off
+    let res = suite.query_gauge(gauge_contract.clone(), gauge_id)?;
+    assert!(res.is_stopped);
+
+    // advance to 5th epoch time. Error.
+    suite.advance_time(EPOCH);
+    suite
+        .execute_options(&gauge_contract, voter1, gauge_id)
+        .unwrap_err();
+
+    Ok(())
 }

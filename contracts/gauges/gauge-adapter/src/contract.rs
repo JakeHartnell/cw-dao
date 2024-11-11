@@ -8,6 +8,7 @@ use cw2::set_contract_version;
 use cw20::Cw20ReceiveMsg;
 use cw_denom::UncheckedDenom;
 use cw_utils::{one_coin, PaymentError};
+use execute::execute_update_owner;
 
 use crate::{
     error::ContractError,
@@ -39,8 +40,15 @@ pub fn instantiate(
         },
     )?;
 
+    // set owner
+    cw_ownable::initialize_owner(
+        deps.storage,
+        deps.api,
+        Some(deps.api.addr_validate(&msg.owner)?.as_str()),
+    )?;
+
     let config = Config {
-        admin: deps.api.addr_validate(&msg.admin)?,
+        owner: deps.api.addr_validate(&msg.owner)?,
         required_deposit: msg
             .required_deposit
             .map(|x| x.into_checked(deps.as_ref()))
@@ -56,7 +64,7 @@ pub fn instantiate(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
@@ -76,6 +84,7 @@ pub fn execute(
             execute::create_submission(deps, info.sender, name, url, address, received)
         }
         ExecuteMsg::ReturnDeposits {} => execute::return_deposits(deps, info.sender),
+        ExecuteMsg::UpdateOwnership(action) => execute_update_owner(deps, info, env, action),
     }
 }
 
@@ -118,7 +127,7 @@ pub mod execute {
             required_deposit,
             community_pool: _,
             reward: _,
-            admin: _,
+            owner: _,
         } = CONFIG.load(deps.storage)?;
         if let Some(required_deposit) = required_deposit {
             if let Some(received) = received {
@@ -157,7 +166,7 @@ pub mod execute {
 
     pub fn return_deposits(deps: DepsMut, sender: Addr) -> Result<Response, ContractError> {
         let Config {
-            admin,
+            owner,
             required_deposit,
             community_pool: _,
             reward: _,
@@ -166,7 +175,7 @@ pub mod execute {
         // No refund if no deposit was required.
         let required_deposit = required_deposit.ok_or(ContractError::NoDepositToRefund {})?;
 
-        ensure_eq!(sender, admin, ContractError::Unauthorized {});
+        ensure_eq!(sender, owner, ContractError::Unauthorized {});
 
         let msgs = SUBMISSIONS
             .range(deps.storage, None, None, Order::Ascending)
@@ -180,6 +189,16 @@ pub mod execute {
             .collect::<StdResult<Vec<CosmosMsg>>>()?;
 
         Ok(Response::new().add_messages(msgs))
+    }
+
+    pub fn execute_update_owner(
+        deps: DepsMut,
+        info: MessageInfo,
+        env: Env,
+        action: cw_ownable::Action,
+    ) -> Result<Response, ContractError> {
+        let ownership = cw_ownable::update_ownership(deps, &env.block, &info.sender, action)?;
+        Ok(Response::default().add_attributes(ownership.into_attributes()))
     }
 }
 
@@ -198,6 +217,7 @@ pub fn query(deps: Deps, _env: Env, msg: AdapterQueryMsg) -> StdResult<Binary> {
             to_json_binary(&query::submission(deps, address)?)
         }
         AdapterQueryMsg::AllSubmissions {} => to_json_binary(&query::all_submissions(deps)?),
+        AdapterQueryMsg::Ownership {} => to_json_binary(&cw_ownable::get_ownership(deps.storage)?),
     }
 }
 
@@ -303,7 +323,7 @@ mod tests {
     fn proper_initialization() {
         let mut deps = mock_dependencies();
         let msg = InstantiateMsg {
-            admin: "admin".to_owned(),
+            owner: "owner".to_owned(),
             required_deposit: Some(AssetUnchecked::new_native("wynd", 10_000_000)),
             community_pool: "community".to_owned(),
             reward: AssetUnchecked::new_native("ujuno", 150_000_000_000),
@@ -318,7 +338,7 @@ mod tests {
 
         // Check if the config is stored.
         let config = CONFIG.load(deps.as_ref().storage).unwrap();
-        assert_eq!(config.admin, Addr::unchecked("admin"));
+        assert_eq!(config.owner, Addr::unchecked("owner"));
         assert_eq!(
             config.required_deposit,
             Some(Asset {
@@ -370,7 +390,7 @@ mod tests {
 
         let reward = Uint128::new(150_000_000_000);
         let msg = InstantiateMsg {
-            admin: "admin".to_owned(),
+            owner: "owner".to_owned(),
             required_deposit: Some(AssetUnchecked::new_native("wynd", 10_000_000)),
             community_pool: "community".to_owned(),
             reward: AssetUnchecked::new_native("ujuno", reward.into()),
@@ -416,7 +436,7 @@ mod tests {
     fn return_deposits_authorization() {
         let mut deps = mock_dependencies();
         let msg = InstantiateMsg {
-            admin: "admin".to_owned(),
+            owner: "owner".to_owned(),
             required_deposit: None,
             community_pool: "community".to_owned(),
             reward: AssetUnchecked::new_native("ujuno", 150_000_000_000),

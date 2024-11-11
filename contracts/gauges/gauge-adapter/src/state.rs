@@ -6,7 +6,7 @@ use cw_storage_plus::{Item, Map};
 #[cw_serde]
 pub struct Config {
     /// Address that is allowed to return deposits.
-    pub admin: Addr,
+    pub owner: Addr,
     /// Deposit required for valid submission.
     pub required_deposit: Option<Asset>,
     /// Address of contract where each deposit is transferred.

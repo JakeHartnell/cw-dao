@@ -47,6 +47,7 @@ fn multiple_options_one_gauge() {
             reward_to_distribute,
             None,
             None,
+            None,
         )
         .unwrap();
     let gauge_id = 0;
@@ -152,6 +153,7 @@ fn multiple_options_two_gauges() {
             reward_to_distribute,
             None,
             None,
+            None,
         )
         .unwrap();
     suite
@@ -177,6 +179,7 @@ fn multiple_options_two_gauges() {
             gauge_contract.clone(),
             &["option3", "option4", "option5"],
             reward_to_distribute,
+            None,
             None,
             None,
         )
@@ -280,6 +283,7 @@ fn not_voted_options_are_not_selected() {
             gauge_contract.clone(),
             &["option1", "option2", "option3", "option4"],
             reward_to_distribute,
+            None,
             None,
             None,
         )
