@@ -97,7 +97,7 @@ impl Gauge {
             false
         }
     }
-    // Increments the contracts global gauge count
+    /// Increments the contracts global gauge count
     pub fn increment_gauge_count(&self) -> StdResult<Option<u64>> {
         Ok(self.count.map_or(Some(0), |o| Some(o + 1)))
     }
