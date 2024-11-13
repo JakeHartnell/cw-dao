@@ -28,6 +28,7 @@ cw-utils = { workspace = true }
 cw2 = { workspace = true }
 cw4 = { workspace = true }
 thiserror = { workspace = true }
+cw-orch.workspace = true
 
 [dev-dependencies]
 cw-multi-test = { workspace = true }

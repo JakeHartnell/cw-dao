@@ -23,6 +23,7 @@ pub enum InstantiateMsg {
 
 /// State changing methods available to this smart contract.
 #[cw_serde]
+#[derive(cw_orch::ExecuteFns)]
 pub enum ExecuteMsg {
     /// Allow adds the target address to the allowlist to be able to send or recieve tokens even if the token
     /// is frozen. Token Factory's BeforeSendHook listener must be set to this contract in order for this feature
@@ -108,7 +109,7 @@ pub struct MigrateMsg {}
 
 /// Queries supported by this smart contract.
 #[cw_serde]
-#[derive(QueryResponses)]
+#[derive(QueryResponses, cw_orch::QueryFns)]
 pub enum QueryMsg {
     /// Returns if token transfer is disabled. Response: IsFrozenResponse
     #[returns(IsFrozenResponse)]

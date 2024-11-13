@@ -36,8 +36,10 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
+#[derive(cw_orch::ExecuteFns)]
 pub enum ExecuteMsg {
     /// Stakes tokens with the contract to get voting power in the DAO
+    #[cw_orch(payable)]
     Stake {},
     /// Unstakes tokens so that they begin unbonding
     Unstake { amount: Uint128 },
@@ -61,7 +63,7 @@ pub enum ExecuteMsg {
 #[active_query]
 #[voting_module_query]
 #[cw_serde]
-#[derive(QueryResponses)]
+#[derive(QueryResponses, cw_orch::QueryFns)]
 pub enum QueryMsg {
     #[returns(crate::state::Config)]
     GetConfig {},

@@ -1,0 +1,49 @@
+[package]
+name = "dao-cw-orch"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = []
+wasm_test = []
+
+[dependencies]
+btsg-ft-factory.workspace = true
+cosmwasm-std.workspace = true
+cw-orch.workspace = true
+cw20-stake.workspace = true
+cw20-stake-external-rewards = { path = "../../contracts/staking/cw20-stake-external-rewards" }
+cw20-stake-reward-distributor = { path = "../../contracts/staking/cw20-stake-reward-distributor" }
+cw721-base.workspace = true
+cw721-roles.workspace = true
+cw-admin-factory.workspace = true
+cw-vesting.workspace = true
+cw-payroll-factory.workspace = true
+cw-token-swap = { path = "../../contracts/external/cw-token-swap" }
+cw-tokenfactory-issuer.workspace = true
+dao-migrator = { path = "../../contracts/external/dao-migrator" }
+dao-dao-core.workspace = true
+dao-interface.workspace = true
+dao-pre-propose-approval-single.workspace = true
+dao-pre-propose-approver.workspace = true
+dao-pre-propose-multiple.workspace = true
+dao-pre-propose-single.workspace = true
+dao-proposal-condorcet.workspace = true
+dao-proposal-hook-counter.workspace = true
+dao-proposal-multiple.workspace = true
+dao-proposal-single.workspace = true
+dao-proposal-sudo.workspace = true
+dao-test-custom-factory.workspace = true
+dao-voting-cw20-balance.workspace = true
+dao-voting-cw20-staked.workspace = true
+dao-voting-cw4.workspace = true
+dao-voting-cw721-roles.workspace = true
+dao-voting-cw721-staked.workspace = true
+dao-voting-token-staked.workspace = true
+dao-rewards-distributor.workspace = true
+cw-fund-distributor.workspace = true
+serde.workspace = true

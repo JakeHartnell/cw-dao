@@ -34,7 +34,7 @@ impl<'a> DaoCore<'a> {
                 code_id,
                 &instantiate_msg,
                 Some(&signer.address()),
-                None,
+                Some("dao_dao_core"),
                 funds,
                 signer,
             )?

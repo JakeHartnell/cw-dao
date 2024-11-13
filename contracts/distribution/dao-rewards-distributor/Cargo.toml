@@ -1,6 +1,11 @@
 [package]
 name = "dao-rewards-distributor"
-authors = ["Ben2x4 <Ben2x4@tutanota.com>", "ekez <ekez@withoutdoing.com>", "Jake Hartnell <no-reply@no-reply.com>", "bekauz <bekauz@protonmail.com>"]
+authors = [
+    "Ben2x4 <Ben2x4@tutanota.com>",
+    "ekez <ekez@withoutdoing.com>",
+    "Jake Hartnell <no-reply@no-reply.com>",
+    "bekauz <bekauz@protonmail.com>",
+]
 description = "Distributes rewards based on DAO membership."
 edition = { workspace = true }
 license = { workspace = true }
@@ -21,7 +26,7 @@ cosmwasm-schema = { workspace = true }
 cw2 = { workspace = true }
 cw4 = { workspace = true }
 cw20 = { workspace = true }
-cw20-base = {  workspace = true, features = ["library"] }
+cw20-base = { workspace = true, features = ["library"] }
 cw-controllers = { workspace = true }
 cw-ownable = { workspace = true }
 cw-storage-plus = { workspace = true }
@@ -31,6 +36,7 @@ dao-interface = { workspace = true }
 dao-voting = { workspace = true }
 semver = { workspace = true }
 thiserror = { workspace = true }
+cw-orch.workspace = true
 
 [dev-dependencies]
 dao-rewards-distributor = { workspace = true }

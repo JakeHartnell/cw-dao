@@ -36,7 +36,7 @@ impl<'a> DaoVotingCw4<'a> {
                 code_id,
                 &instantiate_msg,
                 Some(&signer.address()),
-                None,
+                Some("dao_voting_cw4"),
                 funds,
                 signer,
             )?

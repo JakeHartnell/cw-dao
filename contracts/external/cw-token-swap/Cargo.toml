@@ -23,6 +23,7 @@ cw-storage-plus = { workspace = true }
 cw-utils = { workspace = true }
 cw2 = { workspace = true }
 cw20 = { workspace = true }
+cw-orch = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]

@@ -348,7 +348,7 @@ impl<'a> TokenVotingContract<'a> {
                 code_id,
                 &instantiate_msg,
                 Some(&signer.address()),
-                None,
+                Some("token_voting"),
                 &[],
                 signer,
             )?
@@ -398,7 +398,7 @@ impl<'a> TokenVotingContract<'a> {
                 code_id,
                 &instantiate_msg,
                 Some(&signer.address()),
-                None,
+                Some("token_voting_contract"),
                 &[],
                 signer,
             )?

@@ -633,7 +633,8 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
                     // If metadata, set it by calling the contract
                     #[cfg(any(
                         feature = "osmosis_tokenfactory",
-                        feature = "cosmwasm_tokenfactory"
+                        feature = "cosmwasm_tokenfactory",
+                        feature = "kujira_tokenfactory"
                     ))]
                     if let Some(metadata) = token.metadata {
                         // The first denom_unit must be the same as the tf and base denom.
@@ -663,6 +664,8 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
                                     display: metadata.display,
                                     name: metadata.name,
                                     symbol: metadata.symbol,
+                                    uri: String::default(),
+                                    uri_hash: String::default(),
                                 },
                             })?,
                             funds: vec![],

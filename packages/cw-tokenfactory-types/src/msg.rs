@@ -61,6 +61,8 @@ mod tokenfactory_msg {
                 display: metadata.display,
                 name: metadata.name,
                 symbol: metadata.symbol,
+                uri: metadata.uri,
+                uri_hash: metadata.uri_hash,
             }),
         }
     }

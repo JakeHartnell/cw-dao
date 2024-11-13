@@ -20,9 +20,11 @@ pub struct InstantiateMsg<InstantiateExt> {
 }
 
 #[cw_serde]
+#[derive(cw_orch::ExecuteFns)]
 pub enum ExecuteMsg<ProposalMessage, ExecuteExt> {
     /// Creates a new proposal in the pre-propose module. MSG will be
     /// serialized and used as the proposal creation message.
+    #[cw_orch(payable)]
     Propose { msg: ProposalMessage },
 
     /// Updates the configuration of this module. This will completely
@@ -106,7 +108,7 @@ pub enum ExecuteMsg<ProposalMessage, ExecuteExt> {
 }
 
 #[cw_serde]
-#[derive(QueryResponses)]
+#[derive(QueryResponses, cw_orch::QueryFns)]
 pub enum QueryMsg<QueryExt>
 where
     QueryExt: JsonSchema,

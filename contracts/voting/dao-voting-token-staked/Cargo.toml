@@ -48,6 +48,7 @@ dao-voting = { workspace = true }
 cw-tokenfactory-issuer = { workspace = true, default-features = false, features = [
   "library",
 ] }
+cw-orch.workspace = true
 
 [dev-dependencies]
 anyhow = { workspace = true }

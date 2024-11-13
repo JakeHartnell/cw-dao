@@ -29,6 +29,7 @@ dao-voting = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 semver = { workspace = true }
+cw-orch = { workspace = true }
 
 [dev-dependencies]
 cw-multi-test = { workspace = true }

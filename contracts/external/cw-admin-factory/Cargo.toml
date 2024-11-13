@@ -26,6 +26,7 @@ cosmwasm-std = { workspace = true, features = ["cosmwasm_1_2"] }
 cosmwasm-schema = { workspace = true }
 cw-storage-plus = { workspace = true }
 cw2 = { workspace = true }
+cw-orch = { workspace = true }
 thiserror = { workspace = true }
 cw-utils = { workspace = true }
 

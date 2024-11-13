@@ -37,7 +37,7 @@ impl<'a> DaoProposalSingle<'a> {
                 code_id,
                 &instantiate_msg,
                 Some(&signer.address()),
-                None,
+                Some("dao_proposal_single"),
                 &[token_creation_fee],
                 signer,
             )?

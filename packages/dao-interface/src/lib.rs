@@ -8,3 +8,6 @@ pub mod query;
 pub mod state;
 pub mod token;
 pub mod voting;
+
+pub use msg::ExecuteMsgFns as CoreExecuteMsgFns;
+pub use msg::QueryMsgFns as CoreQueryMsgFns;

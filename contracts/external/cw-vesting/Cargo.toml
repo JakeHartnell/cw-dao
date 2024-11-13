@@ -24,6 +24,7 @@ staking = ["cosmwasm-std/staking"]
 cosmwasm-schema = { workspace = true }
 cosmwasm-std = { workspace = true }
 cw-denom = { workspace = true }
+cw-orch = { workspace = true }
 cw-ownable = { workspace = true }
 cw-stake-tracker = { workspace = true }
 cw-storage-plus = { workspace = true }

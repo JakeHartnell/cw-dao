@@ -31,9 +31,10 @@ dao-pre-propose-base = { workspace = true }
 dao-voting = { workspace = true }
 thiserror = { workspace = true }
 
-cw-utils-v1 = { workspace = true}
+cw-utils-v1 = { workspace = true }
 voting-v1 = { workspace = true }
 cw-proposal-single-v1 = { workspace = true, features = ["library"] }
+cw-orch = { workspace = true }
 
 [dev-dependencies]
 dao-proposal-single = { workspace = true }

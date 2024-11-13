@@ -47,6 +47,7 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
+#[derive(cw_orch::ExecuteFns)]
 pub enum ExecuteMsg {
     /// Creates a proposal in the module.
     Propose(SingleChoiceProposeMsg),
@@ -70,6 +71,7 @@ pub enum ExecuteMsg {
     },
     /// Causes the messages associated with a passed proposal to be
     /// executed by the DAO.
+    #[cw_orch(fn_name("proposal_execute"))]
     Execute {
         /// The ID of the proposal to execute.
         proposal_id: u64,
@@ -147,7 +149,7 @@ pub enum ExecuteMsg {
 
 #[proposal_module_query]
 #[cw_serde]
-#[derive(QueryResponses)]
+#[derive(QueryResponses, cw_orch::QueryFns)]
 pub enum QueryMsg {
     /// Gets the proposal module's config.
     #[returns(crate::state::Config)]

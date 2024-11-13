@@ -40,7 +40,7 @@ impl<'a> TokenfactoryIssuer<'a> {
                 code_id,
                 &instantiate_msg,
                 Some(&signer.address()),
-                None,
+                Some("cw_tokenfactory_issuer"),
                 &[token_creation_fee],
                 signer,
             )?

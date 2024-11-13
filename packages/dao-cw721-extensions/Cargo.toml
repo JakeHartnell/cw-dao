@@ -12,3 +12,4 @@ cosmwasm-std = { workspace = true }
 cosmwasm-schema = { workspace = true }
 cw-controllers = { workspace = true }
 cw4 = { workspace = true }
+cw-orch = { workspace = true }

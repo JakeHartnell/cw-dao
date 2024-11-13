@@ -30,6 +30,8 @@ fn set_denom_metadata_by_contract_owner_should_work() {
         display: "sthb".to_string(),
         name: "Stable Thai Baht".to_string(),
         symbol: "STHB".to_string(),
+        uri: String::default(),
+        uri_hash: String::default(),
     };
     env.cw_tokenfactory_issuer
         .set_denom_metadata(metadata, owner)
@@ -64,6 +66,8 @@ fn set_denom_metadata_by_contract_non_owner_should_fail() {
         display: "sthb".to_string(),
         name: "Stable Thai Baht".to_string(),
         symbol: "STHB".to_string(),
+        uri: String::default(),
+        uri_hash: String::default(),
     };
 
     // Set denom metadata
@@ -108,6 +112,8 @@ fn set_denom_metadata_with_base_denom_unit_should_overides_default_base_denom_un
         display: "sthb".to_string(),
         name: "Stable Thai Baht".to_string(),
         symbol: "STHB".to_string(),
+        uri: String::default(),
+        uri_hash: String::default(),
     };
 
     // Set denom metadata

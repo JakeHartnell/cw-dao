@@ -128,7 +128,7 @@ fn test_full_integration_with_factory() {
     // Error is insufficient funds as no funds were sent
     assert_eq!(
         RunnerError::ExecuteError {
-            msg: "failed to execute message; message index: 0: dispatch: submessages: 0uosmo is smaller than 1000uosmo: insufficient funds".to_string()
+            msg: "failed to execute message; message index: 0: dispatch: submessages: spendable balance  is smaller than 1000uosmo: insufficient funds".to_string()
         },
         err
     );

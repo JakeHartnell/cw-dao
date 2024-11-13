@@ -36,7 +36,7 @@ impl<'a> Cw4Group<'a> {
                 code_id,
                 &instantiate_msg,
                 Some(&signer.address()),
-                None,
+                Some("cw4_group"),
                 &[],
                 signer,
             )?

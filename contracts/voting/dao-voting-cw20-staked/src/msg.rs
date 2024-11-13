@@ -61,6 +61,7 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
+#[derive(cw_orch::ExecuteFns)]
 pub enum ExecuteMsg {
     /// Sets the active threshold to a new value. Only the
     /// instantiator this contract (a DAO most likely) may call this
@@ -74,7 +75,7 @@ pub enum ExecuteMsg {
 #[cw20_token_query]
 #[active_query]
 #[cw_serde]
-#[derive(QueryResponses)]
+#[derive(QueryResponses, cw_orch::QueryFns)]
 pub enum QueryMsg {
     /// Gets the address of the cw20-stake contract this voting module
     /// is wrapping.

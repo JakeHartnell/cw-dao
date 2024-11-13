@@ -33,5 +33,5 @@ pub enum ExecuteMsg {}
 #[cw20_token_query]
 #[voting_module_query]
 #[cw_serde]
-#[derive(QueryResponses)]
+#[derive(QueryResponses, cw_orch::QueryFns)]
 pub enum QueryMsg {}

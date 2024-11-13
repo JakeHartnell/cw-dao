@@ -25,6 +25,7 @@ cw-storage-plus = { workspace = true }
 cw-utils        = { workspace = true }
 cw2             = { workspace = true }
 cw4             = { workspace = true }
+cw-orch         = { workspace = true }
 cw721           = { workspace = true }
 cw721-base      = { workspace = true, features = ["library"] }
 dao-cw721-extensions = { workspace = true }

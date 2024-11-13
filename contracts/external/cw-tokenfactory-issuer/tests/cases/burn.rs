@@ -209,7 +209,7 @@ fn burn_more_than_balance_should_fail_and_not_deduct_allowance() {
         assert_eq!(
             err,
             RunnerError::ExecuteError {
-                msg: format!("failed to execute message; message index: 0: dispatch: submessages: {balance}{denom} is smaller than {burn_amount}{denom}: insufficient funds")
+                msg: format!("failed to execute message; message index: 0: dispatch: submessages: spendable balance {balance}{denom} is smaller than {burn_amount}{denom}: insufficient funds")
             }
         );
 

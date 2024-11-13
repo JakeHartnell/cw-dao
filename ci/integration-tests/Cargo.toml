@@ -11,6 +11,7 @@ edition = { workspace = true }
 # targeting wasm.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 cosm-orc = { workspace = true }
+tokio.workspace = true
 cw20 = { workspace = true }
 cw20-base = { workspace = true }
 cw721-base = { workspace = true }

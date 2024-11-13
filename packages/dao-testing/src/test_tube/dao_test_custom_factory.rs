@@ -37,7 +37,7 @@ impl<'a> CustomFactoryContract<'a> {
                 code_id,
                 &instantiate_msg,
                 Some(&signer.address()),
-                None,
+                Some("dao_test_custom_factory"),
                 &[token_creation_fee],
                 signer,
             )?

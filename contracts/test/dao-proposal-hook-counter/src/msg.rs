@@ -8,6 +8,7 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
+#[derive(cw_orch::ExecuteFns)]
 pub enum ExecuteMsg {
     ProposalHook(ProposalHookMsg),
     StakeChangeHook(StakeChangedHookMsg),
@@ -15,7 +16,7 @@ pub enum ExecuteMsg {
 }
 
 #[cw_serde]
-#[derive(QueryResponses)]
+#[derive(QueryResponses, cw_orch::QueryFns)]
 pub enum QueryMsg {
     #[returns(Uint128)]
     StakeCounter {},

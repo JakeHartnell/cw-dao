@@ -62,6 +62,7 @@ pub struct InstantiateMsg {
 
 #[cw_ownable_execute]
 #[cw_serde]
+#[derive(cw_orch::ExecuteFns)]
 pub enum ExecuteMsg {
     /// Fund the contract with a cw20 token. The `msg` field must have
     /// the shape `{"fund":{}}`, and the amount sent must be the same
@@ -194,7 +195,7 @@ pub enum ReceiveMsg {
 }
 
 #[cw_serde]
-#[derive(QueryResponses)]
+#[derive(QueryResponses, cw_orch::QueryFns)]
 pub enum QueryMsg {
     /// Get the current ownership.
     #[returns(::cw_ownable::Ownership<::cosmwasm_std::Addr>)]

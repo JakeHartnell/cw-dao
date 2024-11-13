@@ -7,12 +7,14 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
+#[derive(cw_orch::ExecuteFns)]
 pub enum ExecuteMsg {
+    #[cw_orch(fn_name("proposal_execute"))]
     Execute { msgs: Vec<CosmosMsg> },
 }
 
 #[cw_serde]
-#[derive(QueryResponses)]
+#[derive(cw_orch::QueryFns, QueryResponses)]
 pub enum QueryMsg {
     #[returns(cosmwasm_std::Addr)]
     Admin {},

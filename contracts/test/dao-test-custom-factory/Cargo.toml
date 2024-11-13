@@ -33,6 +33,6 @@ cw-tokenfactory-issuer = { workspace = true, features = [
   "library",
   "osmosis_tokenfactory",
 ] }
-
+cw-orch = { workspace = true }
 [dev-dependencies]
 cw-multi-test = { workspace = true }

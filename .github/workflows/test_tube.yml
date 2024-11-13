@@ -17,6 +17,19 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v3
 
+      # https://github.com/orgs/community/discussions/25678
+      - name: Free up disk space on runner
+        run: |
+          df -h
+          rm -rf /usr/share/dotnet/
+          sudo apt-get remove -y 'php.*'
+          sudo apt-get remove -y '^dotnet-.*'
+          sudo apt-get remove -y azure-cli firefox powershell mono-devel
+          sudo apt-get autoremove -y
+          sudo apt-get clean
+          df -h
+        shell: bash
+
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
         with:

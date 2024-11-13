@@ -36,7 +36,7 @@ impl<'a> Cw721Base<'a> {
                 code_id,
                 &instantiate_msg,
                 Some(&signer.address()),
-                None,
+                Some("cw721_base"),
                 &[],
                 signer,
             )?

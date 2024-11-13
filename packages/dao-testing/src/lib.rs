@@ -16,5 +16,9 @@ pub mod suite;
 #[cfg(not(target_arch = "wasm32"))]
 pub use suite::*;
 
+// Integration tests using an actual chain binary, requires
+// the "test-tube" feature to be enabled
+// cargo test --features test-tube
 #[cfg(not(target_arch = "wasm32"))]
+#[cfg(feature = "test-tube")]
 pub mod test_tube;

@@ -1,5 +1,5 @@
 [package]
-name ="dao-proposal-condorcet"
+name = "dao-proposal-condorcet"
 authors = ["ekez <ekez@withoutdoing.com>"]
 description = "A DAO DAO proposal module with ranked-choice, Condorcet voting."
 edition = { workspace = true }
@@ -26,6 +26,7 @@ dao-voting = { workspace = true }
 dao-dao-macros = { workspace = true }
 dao-interface = { workspace = true }
 thiserror = { workspace = true }
+cw-orch = { workspace = true }
 
 [dev-dependencies]
 cosmwasm-schema = { workspace = true }

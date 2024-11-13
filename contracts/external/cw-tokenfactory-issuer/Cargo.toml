@@ -45,6 +45,7 @@ kujira_tokenfactory = ["cw-tokenfactory-types/kujira_tokenfactory"]
 cosmwasm-schema = { workspace = true }
 cosmwasm-std = { workspace = true }
 cw2 = { workspace = true }
+cw-orch = { workspace = true }
 cw-ownable = { workspace = true }
 cw-storage-plus = { workspace = true }
 cw-tokenfactory-types = { workspace = true, default-features = false }

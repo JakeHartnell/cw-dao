@@ -1,5 +1,5 @@
 [workspace]
-exclude = ["ci/configs/", "wasmvm/libwasmvm"]
+exclude = ["ci/configs/", "wasmvm/libwasmvm", "scripts"]
 members = [
   "contracts/dao-dao-core",
   "contracts/distribution/*",
@@ -57,13 +57,13 @@ cw721-base = "0.18"
 env_logger = "0.10"
 once_cell = "1.18"
 omniflix-std = "0.1.8"
-osmosis-std = "0.20.1"
+osmosis-std = "0.25.0"
 osmosis-std-derive = "0.20.1"
-osmosis-test-tube = "20.1.1"
+osmosis-test-tube = "25.0.0"
 proc-macro2 = "1.0"
-prost = { version = "=0.12.3", features = ["prost-derive"] }
-prost-types = { version = "=0.12.3", default-features = false }
-prost-derive = "=0.12.3"
+prost = { version = "0.12.3", features = ["prost-derive"] }
+prost-types = { version = "0.12.3", default-features = false }
+prost-derive = "0.12.3"
 quote = "1.0"
 rand = "0.8"
 schemars = "0.8"
@@ -80,6 +80,8 @@ syn = { version = "1.0", features = ["derive"] }
 test-context = "0.1"
 thiserror = { version = "1.0" }
 wynd-utils = "0.4"
+cw-orch = "0.24.1"
+tokio = "1.40.0"
 
 # One commit ahead of version 0.3.0. Allows initialization with an
 # optional owner.

@@ -27,6 +27,7 @@ thiserror = { workspace = true }
 dao-dao-macros = { workspace = true }
 dao-interface = { workspace = true }
 cw20-base = { workspace = true, features = ["library"] }
+cw-orch = { workspace = true }
 
 [dev-dependencies]
 cw-multi-test = { workspace = true }

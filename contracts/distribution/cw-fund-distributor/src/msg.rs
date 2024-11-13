@@ -13,11 +13,17 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
+#[derive(cw_orch::ExecuteFns)]
 pub enum ExecuteMsg {
     Receive(cw20::Cw20ReceiveMsg),
+    #[cw_orch(payable)]
     FundNative {},
-    ClaimCW20 { tokens: Vec<String> },
-    ClaimNatives { denoms: Vec<String> },
+    ClaimCW20 {
+        tokens: Vec<String>,
+    },
+    ClaimNatives {
+        denoms: Vec<String>,
+    },
     ClaimAll {},
 }
 

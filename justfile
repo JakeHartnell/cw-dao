@@ -9,7 +9,8 @@ test:
 	cargo test
 
 lint:
-	cargo +nightly clippy --all-targets -- -D warnings
+	cargo +stable fmt --all -- --check
+	cargo +stable clippy --all-targets -- -D warnings
 
 gen: build gen-schema
 

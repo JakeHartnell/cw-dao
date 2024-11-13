@@ -23,7 +23,7 @@ cw-storage-plus = { workspace = true }
 cw2 = { workspace = true }
 thiserror = { workspace = true }
 dao-hooks = { workspace = true }
-
+cw-orch = { workspace = true }
 [dev-dependencies]
 cw-hooks = { workspace = true }
 cw20 = { workspace = true }
