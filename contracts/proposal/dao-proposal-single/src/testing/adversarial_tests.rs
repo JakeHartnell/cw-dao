@@ -181,6 +181,7 @@ pub fn test_executed_prop_state_remains_after_vote_swing() {
             false,
         ),
         close_proposal_on_execution_failure: true,
+        delegation_module: None,
     };
 
     let core_addr = instantiate_with_staked_balances_governance(
@@ -280,6 +281,7 @@ pub fn test_passed_prop_state_remains_after_vote_swing() {
             false,
         ),
         close_proposal_on_execution_failure: true,
+        delegation_module: None,
     };
 
     let core_addr = instantiate_with_staked_balances_governance(

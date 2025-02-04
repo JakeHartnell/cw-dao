@@ -397,6 +397,7 @@ fn test_factory() {
                 close_proposal_on_execution_failure: false,
                 pre_propose_info: PreProposeInfo::AnyoneMayPropose {},
                 veto: None,
+                delegation_module: None,
             })
             .unwrap(),
             admin: Some(Admin::CoreModule {}),
@@ -507,6 +508,7 @@ fn test_factory_funds_pass_through() {
                 close_proposal_on_execution_failure: false,
                 pre_propose_info: PreProposeInfo::AnyoneMayPropose {},
                 veto: None,
+                delegation_module: None,
             })
             .unwrap(),
             admin: Some(Admin::CoreModule {}),
@@ -633,6 +635,7 @@ fn test_factory_no_callback() {
                 close_proposal_on_execution_failure: false,
                 pre_propose_info: PreProposeInfo::AnyoneMayPropose {},
                 veto: None,
+                delegation_module: None,
             })
             .unwrap(),
             admin: Some(Admin::CoreModule {}),
@@ -714,6 +717,7 @@ fn test_factory_wrong_callback() {
                 close_proposal_on_execution_failure: false,
                 pre_propose_info: PreProposeInfo::AnyoneMayPropose {},
                 veto: None,
+                delegation_module: None,
             })
             .unwrap(),
             admin: Some(Admin::CoreModule {}),

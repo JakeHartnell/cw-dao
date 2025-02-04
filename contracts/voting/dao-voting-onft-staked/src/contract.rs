@@ -165,7 +165,8 @@ pub fn execute_confirm_stake(
             // check if sender prepared
             let prepared = PREPARED_ONFTS
                 .may_load(deps.storage, token_id.to_string())?
-                .map_or(false, |preparer| preparer == info.sender);
+                .as_ref()
+                == Some(&info.sender);
 
             // check that NFT was transferred to this contract
             let owner = query_onft_owner(deps.as_ref(), &config.onft_collection_id, token_id)?;
@@ -271,7 +272,7 @@ pub fn execute_cancel_stake(
         }
     } else {
         for (token_id, owner, preparer) in token_ids_with_owners_and_preparers {
-            let is_preparer = preparer.as_ref().map_or(false, |p| *p == info.sender);
+            let is_preparer = preparer.as_ref() == Some(&info.sender);
             // only owner or preparer can cancel stake
             if info.sender != owner && !is_preparer {
                 return Err(ContractError::NotPreparerNorOwner {});

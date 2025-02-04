@@ -6,11 +6,11 @@ mod token_suite;
 
 pub const OWNER: &str = "owner";
 
-pub const MEMBER1: &str = "member1";
-pub const MEMBER2: &str = "member2";
-pub const MEMBER3: &str = "member3";
-pub const MEMBER4: &str = "member4";
-pub const MEMBER5: &str = "member5";
+pub const ADDR0: &str = "addr0";
+pub const ADDR1: &str = "addr1";
+pub const ADDR2: &str = "addr2";
+pub const ADDR3: &str = "addr3";
+pub const ADDR4: &str = "addr4";
 
 pub const GOV_DENOM: &str = "ugovtoken";
 

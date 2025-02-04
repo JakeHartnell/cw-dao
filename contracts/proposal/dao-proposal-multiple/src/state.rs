@@ -1,6 +1,6 @@
 use crate::proposal::MultipleChoiceProposal;
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Uint128};
+use cosmwasm_std::Addr;
 use cw_hooks::Hooks;
 use cw_storage_plus::{Item, Map};
 use cw_utils::Duration;
@@ -49,16 +49,7 @@ pub struct Config {
     pub veto: Option<VetoConfig>,
 }
 
-// Each ballot stores a chosen vote and corresponding voting power and rationale.
-#[cw_serde]
-pub struct Ballot {
-    /// The amount of voting power behind the vote.
-    pub power: Uint128,
-    /// The position.
-    pub vote: MultipleChoiceVote,
-    /// An optional rationale for why this vote was cast.
-    pub rationale: Option<String>,
-}
+pub type Ballot = dao_voting::proposal::Ballot<MultipleChoiceVote>;
 
 /// The current top level config for the module.
 pub const CONFIG: Item<Config> = Item::new("config");
@@ -72,3 +63,6 @@ pub const VOTE_HOOKS: Hooks = Hooks::new("vote_hooks");
 /// The address of the pre-propose module associated with this
 /// proposal module (if any).
 pub const CREATION_POLICY: Item<ProposalCreationPolicy> = Item::new("creation_policy");
+/// The address of the delegation module associated with this proposal module
+/// (if any).
+pub const DELEGATION_MODULE: Item<Addr> = Item::new("delegation_module");

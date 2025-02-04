@@ -115,6 +115,7 @@ fn main() -> Result<()> {
                 },
                 close_proposal_on_execution_failure: false,
                 veto: None,
+                delegation_module: None,
             })?,
             admin: Some(Admin::CoreModule {}),
             funds: vec![],

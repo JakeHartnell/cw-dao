@@ -1,4 +1,6 @@
-use cosmwasm_std::{coins, to_json_binary, Addr, Uint128};
+use std::ops::{Deref, DerefMut};
+
+use cosmwasm_std::{coins, to_json_binary, Uint128};
 use cw_multi_test::{BankSudo, SudoMsg};
 use cw_utils::Duration;
 use dao_interface::token::InitialBalance;
@@ -20,6 +22,20 @@ pub struct TokenDaoExtra {
 
 pub type TokenTestDao = TestDao<TokenDaoExtra>;
 
+impl Deref for DaoTestingSuiteToken<'_> {
+    type Target = DaoTestingSuiteBase;
+
+    fn deref(&self) -> &Self::Target {
+        self.base
+    }
+}
+
+impl DerefMut for DaoTestingSuiteToken<'_> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.base
+    }
+}
+
 impl<'a> DaoTestingSuiteToken<'a> {
     pub fn new(base: &'a mut DaoTestingSuiteBase) -> Self {
         Self {
@@ -27,23 +43,23 @@ impl<'a> DaoTestingSuiteToken<'a> {
 
             initial_balances: vec![
                 InitialBalance {
-                    address: MEMBER1.to_string(),
+                    address: ADDR0.to_string(),
                     amount: Uint128::new(100),
                 },
                 InitialBalance {
-                    address: MEMBER2.to_string(),
+                    address: ADDR1.to_string(),
                     amount: Uint128::new(200),
                 },
                 InitialBalance {
-                    address: MEMBER3.to_string(),
+                    address: ADDR2.to_string(),
                     amount: Uint128::new(300),
                 },
                 InitialBalance {
-                    address: MEMBER4.to_string(),
+                    address: ADDR3.to_string(),
                     amount: Uint128::new(300),
                 },
                 InitialBalance {
-                    address: MEMBER5.to_string(),
+                    address: ADDR4.to_string(),
                     amount: Uint128::new(100),
                 },
             ],
@@ -77,8 +93,7 @@ impl<'a> DaoTestingSuiteToken<'a> {
         recipient: impl Into<String>,
         amount: impl Into<u128>,
     ) {
-        self.base
-            .app
+        self.app
             .sudo(SudoMsg::Bank({
                 BankSudo::Mint {
                     to_address: recipient.into(),
@@ -95,15 +110,12 @@ impl<'a> DaoTestingSuiteToken<'a> {
         staker: impl Into<String>,
         amount: impl Into<u128>,
     ) {
-        self.base
-            .app
-            .execute_contract(
-                Addr::unchecked(staker),
-                dao.voting_module_addr.clone(),
-                &dao_voting_token_staked::msg::ExecuteMsg::Stake {},
-                &coins(amount.into(), &dao.x.denom),
-            )
-            .unwrap();
+        self.execute_smart_ok(
+            staker,
+            &dao.voting_module_addr,
+            &dao_voting_token_staked::msg::ExecuteMsg::Stake {},
+            &coins(amount.into(), &dao.x.denom),
+        );
     }
 
     /// unstake tokens
@@ -113,32 +125,29 @@ impl<'a> DaoTestingSuiteToken<'a> {
         staker: impl Into<String>,
         amount: impl Into<Uint128>,
     ) {
-        self.base
-            .app
-            .execute_contract(
-                Addr::unchecked(staker),
-                dao.voting_module_addr.clone(),
-                &dao_voting_token_staked::msg::ExecuteMsg::Unstake {
-                    amount: amount.into(),
-                },
-                &[],
-            )
-            .unwrap();
+        self.execute_smart_ok(
+            staker,
+            &dao.voting_module_addr,
+            &dao_voting_token_staked::msg::ExecuteMsg::Unstake {
+                amount: amount.into(),
+            },
+            &[],
+        );
     }
 }
 
-impl<'a> DaoTestingSuite<TokenDaoExtra> for DaoTestingSuiteToken<'a> {
+impl DaoTestingSuite<TokenDaoExtra> for DaoTestingSuiteToken<'_> {
     fn base(&self) -> &DaoTestingSuiteBase {
-        self.base
+        self
     }
 
     fn base_mut(&mut self) -> &mut DaoTestingSuiteBase {
-        self.base
+        self
     }
 
     fn get_voting_module_info(&self) -> dao_interface::state::ModuleInstantiateInfo {
         dao_interface::state::ModuleInstantiateInfo {
-            code_id: self.base.voting_token_staked_id,
+            code_id: self.voting_token_staked_id,
             msg: to_json_binary(&dao_voting_token_staked::msg::InstantiateMsg {
                 token_info: dao_voting_token_staked::msg::TokenInfo::Existing {
                     denom: GOV_DENOM.to_string(),
@@ -173,13 +182,13 @@ impl<'a> DaoTestingSuite<TokenDaoExtra> for DaoTestingSuiteToken<'a> {
         }
 
         // staking takes effect at the next block
-        self.base.advance_block();
+        self.advance_block();
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::Uint128;
+    use cosmwasm_std::{Addr, Uint128};
 
     use super::*;
 

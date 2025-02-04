@@ -83,6 +83,7 @@ fn get_proposal_module_approval_single_instantiate(
         },
         close_proposal_on_execution_failure: false,
         veto: None,
+        delegation_module: None,
     }
 }
 
@@ -116,6 +117,7 @@ fn get_proposal_module_approver_instantiate(
         },
         close_proposal_on_execution_failure: false,
         veto: None,
+        delegation_module: None,
     }
 }
 

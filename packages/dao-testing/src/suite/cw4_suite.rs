@@ -1,3 +1,5 @@
+use std::ops::{Deref, DerefMut};
+
 use cosmwasm_std::{to_json_binary, Addr};
 
 use super::*;
@@ -15,29 +17,43 @@ pub struct Cw4DaoExtra {
 
 pub type Cw4TestDao = TestDao<Cw4DaoExtra>;
 
+impl Deref for DaoTestingSuiteCw4<'_> {
+    type Target = DaoTestingSuiteBase;
+
+    fn deref(&self) -> &Self::Target {
+        self.base
+    }
+}
+
+impl DerefMut for DaoTestingSuiteCw4<'_> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.base
+    }
+}
+
 impl<'a> DaoTestingSuiteCw4<'a> {
     pub fn new(base: &'a mut DaoTestingSuiteBase) -> Self {
         Self {
             base,
             members: vec![
                 cw4::Member {
-                    addr: MEMBER1.to_string(),
+                    addr: ADDR0.to_string(),
                     weight: 1,
                 },
                 cw4::Member {
-                    addr: MEMBER2.to_string(),
+                    addr: ADDR1.to_string(),
                     weight: 2,
                 },
                 cw4::Member {
-                    addr: MEMBER3.to_string(),
+                    addr: ADDR2.to_string(),
                     weight: 3,
                 },
                 cw4::Member {
-                    addr: MEMBER4.to_string(),
+                    addr: ADDR3.to_string(),
                     weight: 3,
                 },
                 cw4::Member {
-                    addr: MEMBER5.to_string(),
+                    addr: ADDR4.to_string(),
                     weight: 1,
                 },
             ],
@@ -50,21 +66,21 @@ impl<'a> DaoTestingSuiteCw4<'a> {
     }
 }
 
-impl<'a> DaoTestingSuite<Cw4DaoExtra> for DaoTestingSuiteCw4<'a> {
+impl DaoTestingSuite<Cw4DaoExtra> for DaoTestingSuiteCw4<'_> {
     fn base(&self) -> &DaoTestingSuiteBase {
-        self.base
+        self
     }
 
     fn base_mut(&mut self) -> &mut DaoTestingSuiteBase {
-        self.base
+        self
     }
 
     fn get_voting_module_info(&self) -> dao_interface::state::ModuleInstantiateInfo {
         dao_interface::state::ModuleInstantiateInfo {
-            code_id: self.base.voting_cw4_id,
+            code_id: self.voting_cw4_id,
             msg: to_json_binary(&dao_voting_cw4::msg::InstantiateMsg {
                 group_contract: dao_voting_cw4::msg::GroupContract::New {
-                    cw4_group_code_id: self.base.cw4_group_id,
+                    cw4_group_code_id: self.cw4_group_id,
                     initial_members: self.members.clone(),
                 },
             })
@@ -96,8 +112,8 @@ mod tests {
 
     #[test]
     fn dao_testing_suite_cw4() {
-        let mut suite = DaoTestingSuiteBase::base();
-        let mut suite = suite.cw4();
+        let mut base = DaoTestingSuiteBase::base();
+        let mut suite = base.cw4();
         let dao = suite.dao();
 
         let voting_module: Addr = suite

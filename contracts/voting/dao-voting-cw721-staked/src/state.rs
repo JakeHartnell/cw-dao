@@ -59,7 +59,7 @@ pub fn register_staked_nft(
     storage: &mut dyn Storage,
     height: u64,
     staker: &Addr,
-    token_id: &String,
+    token_id: &str,
 ) -> StdResult<()> {
     let add_one = |prev: Option<Uint128>| -> StdResult<Uint128> {
         prev.unwrap_or_default()

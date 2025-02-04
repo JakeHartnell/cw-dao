@@ -41,8 +41,30 @@ pub struct MultipleChoiceProposal {
     pub voting_strategy: VotingStrategy,
     /// The total power when the proposal started (used to calculate percentages)
     pub total_power: Uint128,
-    /// The vote tally.
+    /// The vote tally, including voting power delegated to delegates. This
+    /// tally changes in any of the following situations:
+    /// - any voter casts a new vote
+    /// - revoting is enabled and any voter changes their vote
+    /// - a delegator overrides their delegate's vote
     pub votes: MultipleChoiceVotes,
+    /// The vote tally, excluding voting power delegated to delegates. This
+    /// tally changes in any of the following situations:
+    /// - any voter casts a new vote
+    /// - revoting is enabled and any voter changes their vote
+    ///
+    /// This field is used to determine if a proposal has completed early
+    /// (before its expiration) when revoting is disabled. Delegated voting
+    /// power is not counted, since a delegator can override their delegate's
+    /// vote and affect the outcome. Only individual voting power of delegators
+    /// and delegates is counted. This field is irrelevant when revoting is
+    /// enabled and will not be checked.
+    ///
+    /// This field should match the `votes` field when delegation is not in use.
+    /// When using delegation, this field will be equal to `votes` if no
+    /// delegate with delegations has voted, or all delegators have overridden
+    /// their delegates' votes; it will be smaller than `votes` if any delegate
+    /// has voted on behalf of a delegator that has not cast their own vote.
+    pub individual_votes: MultipleChoiceVotes,
     /// Whether DAO members are allowed to change their votes.
     /// When disabled, proposals can be executed as soon as they pass.
     /// When enabled, proposals can only be executed after the voting
@@ -51,6 +73,9 @@ pub struct MultipleChoiceProposal {
     /// Optional veto configuration. If set to `None`, veto option
     /// is disabled. Otherwise contains the configuration for veto flow.
     pub veto: Option<VetoConfig>,
+    /// The address of the delegation module associated with this proposal (if
+    /// one existed when the proposal was created).
+    pub delegation_module: Option<Addr>,
 }
 
 pub enum VoteResult {
@@ -112,16 +137,22 @@ impl MultipleChoiceProposal {
         Ok(())
     }
 
-    /// Returns true iff this proposal is sure to pass (even before
-    /// expiration if no future sequence of possible votes can cause
-    /// it to fail). Passing in the case of multiple choice proposals
-    /// means that quorum has been met,
-    /// one of the options that is not "None of the above"
-    /// has won the most votes, and there is no tie.
+    /// Returns true iff this proposal is sure to pass (even before expiration
+    /// if no future sequence of possible votes can cause it to fail). Passing
+    /// in the case of multiple choice proposals means that quorum has been met,
+    /// one of the options that is not "None of the above" has won the most
+    /// votes, and there is no tie.
+    ///
+    /// Before expiration, this ignores voting power cast via delegation, since
+    /// delegators can override their delegates' votes and change the outcome.
+    /// Once expired, this considers all voting power, including delegated,
+    /// since nothing can change the outcome.
     pub fn is_passed(&self, block: &BlockInfo) -> StdResult<bool> {
+        let is_expired = self.expiration.is_expired(block);
+
         // If re-voting is allowed nothing is known until the proposal
         // has expired.
-        if self.allow_revoting && !self.expiration.is_expired(block) {
+        if self.allow_revoting && !is_expired {
             return Ok(false);
         }
         // If the min voting period is set and not expired the
@@ -135,13 +166,19 @@ impl MultipleChoiceProposal {
             }
         }
 
+        let votes_to_consider = if is_expired {
+            &self.votes
+        } else {
+            &self.individual_votes
+        };
+
         // Proposal can only pass if quorum has been met.
         if does_vote_count_pass(
-            self.votes.total(),
+            votes_to_consider.total(),
             self.total_power,
             self.voting_strategy.get_quorum(),
         ) {
-            let vote_result = self.calculate_vote_result()?;
+            let vote_result = self.calculate_vote_result(block)?;
             match vote_result {
                 // Proposal is not passed if there is a tie.
                 VoteResult::Tie => return Ok(false),
@@ -149,12 +186,12 @@ impl MultipleChoiceProposal {
                     // Proposal is not passed if winning choice is None.
                     if winning_choice.option_type != MultipleChoiceOptionType::None {
                         // If proposal is expired, quorum has been reached, and winning choice is neither tied nor None, then proposal is passed.
-                        if self.expiration.is_expired(block) {
+                        if is_expired {
                             return Ok(true);
                         } else {
                             // If the proposal is not expired but the leading choice cannot
                             // possibly be outwon by any other choices, the proposal has passed.
-                            return self.is_choice_unbeatable(&winning_choice);
+                            return self.is_choice_unbeatable(votes_to_consider, &winning_choice);
                         }
                     }
                 }
@@ -164,29 +201,36 @@ impl MultipleChoiceProposal {
     }
 
     pub fn is_rejected(&self, block: &BlockInfo) -> StdResult<bool> {
+        let is_expired = self.expiration.is_expired(block);
+
         // If re-voting is allowed and the proposal is not expired no
         // information is known.
-        if self.allow_revoting && !self.expiration.is_expired(block) {
+        if self.allow_revoting && !is_expired {
             return Ok(false);
         }
 
-        let vote_result = self.calculate_vote_result()?;
+        let votes_to_consider = if is_expired {
+            &self.votes
+        } else {
+            &self.individual_votes
+        };
+
+        let vote_result = self.calculate_vote_result(block)?;
         match vote_result {
             // Proposal is rejected if there is a tie, and either the proposal is expired or
             // there is no voting power left.
             VoteResult::Tie => {
-                let rejected =
-                    self.expiration.is_expired(block) || self.total_power == self.votes.total();
+                let rejected = is_expired || self.total_power == votes_to_consider.total();
                 Ok(rejected)
             }
             VoteResult::SingleWinner(winning_choice) => {
                 match (
                     does_vote_count_pass(
-                        self.votes.total(),
+                        votes_to_consider.total(),
                         self.total_power,
                         self.voting_strategy.get_quorum(),
                     ),
-                    self.expiration.is_expired(block),
+                    is_expired,
                 ) {
                     // Quorum is met and proposal is expired.
                     (true, true) => {
@@ -201,7 +245,7 @@ impl MultipleChoiceProposal {
                         // If the proposal is not expired and the leading choice is None and it cannot
                         // possibly be outwon by any other choices, the proposal is rejected.
                         if winning_choice.option_type == MultipleChoiceOptionType::None {
-                            return self.is_choice_unbeatable(&winning_choice);
+                            return self.is_choice_unbeatable(votes_to_consider, &winning_choice);
                         }
                         Ok(false)
                     }
@@ -212,12 +256,28 @@ impl MultipleChoiceProposal {
         }
     }
 
-    /// Find the option with the highest vote weight, and note if there is a tie.
-    pub fn calculate_vote_result(&self) -> StdResult<VoteResult> {
+    /// Find the option with the highest vote weight, and note if there is a
+    /// tie.
+    ///
+    /// Before expiration, this ignores voting power cast via delegation, since
+    /// delegators can override their delegates' votes and change the outcome.
+    /// Once expired, this considers all voting power, including delegated,
+    /// since nothing can change the outcome.
+    pub fn calculate_vote_result(&self, block: &BlockInfo) -> StdResult<VoteResult> {
         match self.voting_strategy {
             VotingStrategy::SingleChoice { quorum: _ } => {
+                let votes_to_consider = if self.expiration.is_expired(block) {
+                    &self.votes
+                } else {
+                    &self.individual_votes
+                };
+
                 // We expect to have at least 3 vote weights
-                if let Some(max_weight) = self.votes.vote_weights.iter().max_by(|&a, &b| a.cmp(b)) {
+                if let Some(max_weight) = votes_to_consider
+                    .vote_weights
+                    .iter()
+                    .max_by(|&a, &b| a.cmp(b))
+                {
                     let top_choices: Vec<(usize, &Uint128)> = self
                         .votes
                         .vote_weights
@@ -251,18 +311,18 @@ impl MultipleChoiceProposal {
     /// cannot overtake the first choice.
     fn is_choice_unbeatable(
         &self,
+        votes_to_consider: &MultipleChoiceVotes,
         winning_choice: &CheckedMultipleChoiceOption,
     ) -> StdResult<bool> {
-        let winning_choice_power = self.votes.vote_weights[winning_choice.index as usize];
-        if let Some(second_choice_power) = self
-            .votes
+        let winning_choice_power = votes_to_consider.vote_weights[winning_choice.index as usize];
+        if let Some(second_choice_power) = votes_to_consider
             .vote_weights
             .iter()
             .filter(|&x| x < &winning_choice_power)
             .max_by(|&a, &b| a.cmp(b))
         {
             // Check if the remaining vote power can be used to overtake the current winning choice.
-            let remaining_vote_power = self.total_power - self.votes.total();
+            let remaining_vote_power = self.total_power - votes_to_consider.total();
             match winning_choice.option_type {
                 MultipleChoiceOptionType::Standard => {
                     if winning_choice_power > *second_choice_power + remaining_vote_power {
@@ -332,10 +392,12 @@ mod tests {
             status: Status::Open,
             voting_strategy,
             total_power,
-            votes,
+            votes: votes.clone(),
+            individual_votes: votes.clone(),
             allow_revoting,
             min_voting_period: None,
             veto: None,
+            delegation_module: None,
         }
     }
 

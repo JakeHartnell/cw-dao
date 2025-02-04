@@ -38,14 +38,39 @@ pub struct SingleChoiceProposal {
     pub msgs: Vec<CosmosMsg<Empty>>,
     /// The proposal status
     pub status: Status,
-    /// Votes on a particular proposal
+    /// The vote tally, including voting power delegated to delegates. This
+    /// tally changes in any of the following situations:
+    /// - any voter casts a new vote
+    /// - revoting is enabled and any voter changes their vote
+    /// - a delegator overrides their delegate's vote
     pub votes: Votes,
+    /// The vote tally, excluding voting power delegated to delegates. This
+    /// tally changes in any of the following situations:
+    /// - any voter casts a new vote
+    /// - revoting is enabled and any voter changes their vote
+    ///
+    /// This field is used to determine if a proposal has completed early
+    /// (before its expiration) when revoting is disabled. Delegated voting
+    /// power is not counted, since a delegator can override their delegate's
+    /// vote and affect the outcome. Only individual voting power of delegators
+    /// and delegates is counted. This field is irrelevant when revoting is
+    /// enabled and will not be checked.
+    ///
+    /// This field should match the `votes` field when delegation is not in use.
+    /// When using delegation, this field will be equal to `votes` if no
+    /// delegate with delegations has voted, or all delegators have overridden
+    /// their delegates' votes; it will be smaller than `votes` if any delegate
+    /// has voted on behalf of a delegator that has not cast their own vote.
+    pub individual_votes: Votes,
     /// Whether or not revoting is enabled. If revoting is enabled, a proposal
     /// cannot pass until the voting period has elapsed.
     pub allow_revoting: bool,
     /// Optional veto configuration. If set to `None`, veto option
     /// is disabled. Otherwise contains the configuration for veto flow.
     pub veto: Option<VetoConfig>,
+    /// The address of the delegation module associated with this proposal (if
+    /// one existed when the proposal was created).
+    pub delegation_module: Option<Addr>,
 }
 
 pub fn next_proposal_id(store: &dyn Storage) -> StdResult<u64> {
@@ -112,13 +137,19 @@ impl SingleChoiceProposal {
         Ok(())
     }
 
-    /// Returns true iff this proposal is sure to pass (even before
-    /// expiration if no future sequence of possible votes can cause
-    /// it to fail).
+    /// Returns true iff this proposal is sure to pass (even before expiration
+    /// if no future sequence of possible votes can cause it to fail).
+    ///
+    /// Before expiration, this ignores voting power cast via delegation, since
+    /// delegators can override their delegates' votes and change the outcome.
+    /// Once expired, this considers all voting power, including delegated,
+    /// since nothing can change the outcome.
     pub fn is_passed(&self, block: &BlockInfo) -> bool {
+        let is_expired = self.expiration.is_expired(block);
+
         // If re-voting is allowed nothing is known until the proposal
         // has expired.
-        if self.allow_revoting && !self.expiration.is_expired(block) {
+        if self.allow_revoting && !is_expired {
             return false;
         }
         // If the min voting period is set and not expired the
@@ -132,13 +163,19 @@ impl SingleChoiceProposal {
             }
         }
 
+        let votes_to_consider = if is_expired {
+            &self.votes
+        } else {
+            &self.individual_votes
+        };
+
         match self.threshold {
             Threshold::AbsolutePercentage { percentage } => {
-                let options = self.total_power - self.votes.abstain;
-                does_vote_count_pass(self.votes.yes, options, percentage)
+                let options = self.total_power - votes_to_consider.abstain;
+                does_vote_count_pass(votes_to_consider.yes, options, percentage)
             }
             Threshold::ThresholdQuorum { threshold, quorum } => {
-                if !does_vote_count_pass(self.votes.total(), self.total_power, quorum) {
+                if !does_vote_count_pass(votes_to_consider.total(), self.total_power, quorum) {
                     return false;
                 }
 
@@ -147,31 +184,41 @@ impl SingleChoiceProposal {
                     // expired the number of votes needed to pass a
                     // proposal is compared to the number of votes on
                     // the proposal.
-                    let options = self.votes.total() - self.votes.abstain;
-                    does_vote_count_pass(self.votes.yes, options, threshold)
+                    let options = votes_to_consider.total() - votes_to_consider.abstain;
+                    does_vote_count_pass(votes_to_consider.yes, options, threshold)
                 } else {
-                    let options = self.total_power - self.votes.abstain;
-                    does_vote_count_pass(self.votes.yes, options, threshold)
+                    let options = self.total_power - votes_to_consider.abstain;
+                    does_vote_count_pass(votes_to_consider.yes, options, threshold)
                 }
             }
-            Threshold::AbsoluteCount { threshold } => self.votes.yes >= threshold,
+            Threshold::AbsoluteCount { threshold } => votes_to_consider.yes >= threshold,
         }
     }
 
-    /// As above for the passed check, used to check if a proposal is
-    /// already rejected.
+    /// As above for the passed check, used to check if a proposal is already
+    /// rejected. This ignores voting power cast via delegation, since
+    /// delegators can override their delegates votes. This math should only
+    /// consider individual votes cast.
     pub fn is_rejected(&self, block: &BlockInfo) -> bool {
+        let is_expired = self.expiration.is_expired(block);
+
         // If re-voting is allowed and the proposal is not expired no
         // information is known.
-        if self.allow_revoting && !self.expiration.is_expired(block) {
+        if self.allow_revoting && !is_expired {
             return false;
         }
+
+        let votes_to_consider = if is_expired {
+            &self.votes
+        } else {
+            &self.individual_votes
+        };
 
         match self.threshold {
             Threshold::AbsolutePercentage {
                 percentage: percentage_needed,
             } => {
-                let options = self.total_power - self.votes.abstain;
+                let options = self.total_power - votes_to_consider.abstain;
 
                 // If there is a 100% passing threshold..
                 if percentage_needed == PercentageThreshold::Percent(Decimal::percent(100)) {
@@ -189,22 +236,22 @@ impl SingleChoiceProposal {
                         // threshold`) we get a 0% requirement for no
                         // votes. Zero no votes do indeed meet a 0%
                         // threshold.
-                        return self.votes.no >= Uint128::new(1);
+                        return votes_to_consider.no >= Uint128::new(1);
                     }
                 }
 
-                does_vote_count_fail(self.votes.no, options, percentage_needed)
+                does_vote_count_fail(votes_to_consider.no, options, percentage_needed)
             }
             Threshold::ThresholdQuorum { threshold, quorum } => {
                 match (
-                    does_vote_count_pass(self.votes.total(), self.total_power, quorum),
+                    does_vote_count_pass(votes_to_consider.total(), self.total_power, quorum),
                     self.expiration.is_expired(block),
                 ) {
                     // Has met quorum and is expired.
                     (true, true) => {
                         // => consider only votes cast and see if no
                         //    votes meet threshold.
-                        let options = self.votes.total() - self.votes.abstain;
+                        let options = votes_to_consider.total() - votes_to_consider.abstain;
 
                         // If there is a 100% passing threshold..
                         if threshold == PercentageThreshold::Percent(Decimal::percent(100)) {
@@ -223,17 +270,17 @@ impl SingleChoiceProposal {
                                 // threshold`) we get a 0% requirement
                                 // for no votes. Zero no votes do
                                 // indeed meet a 0% threshold.
-                                return self.votes.no >= Uint128::new(1);
+                                return votes_to_consider.no >= Uint128::new(1);
                             }
                         }
-                        does_vote_count_fail(self.votes.no, options, threshold)
+                        does_vote_count_fail(votes_to_consider.no, options, threshold)
                     }
                     // Has met quorum and is not expired.
                     // | Hasn't met quorum and is not expired.
                     (true, false) | (false, false) => {
                         // => consider all possible votes and see if
                         //    no votes meet threshold.
-                        let options = self.total_power - self.votes.abstain;
+                        let options = self.total_power - votes_to_consider.abstain;
 
                         // If there is a 100% passing threshold..
                         if threshold == PercentageThreshold::Percent(Decimal::percent(100)) {
@@ -252,11 +299,11 @@ impl SingleChoiceProposal {
                                 // get a 0% requirement for no
                                 // votes. Zero no votes do indeed meet
                                 // a 0% threshold.
-                                return self.votes.no >= Uint128::new(1);
+                                return votes_to_consider.no >= Uint128::new(1);
                             }
                         }
 
-                        does_vote_count_fail(self.votes.no, options, threshold)
+                        does_vote_count_fail(votes_to_consider.no, options, threshold)
                     }
                     // Hasn't met quorum requirement and voting has closed => rejected.
                     (false, true) => true,
@@ -265,8 +312,8 @@ impl SingleChoiceProposal {
             Threshold::AbsoluteCount { threshold } => {
                 // If all the outstanding votes voting yes would not
                 // cause this proposal to pass then it is rejected.
-                let outstanding_votes = self.total_power - self.votes.total();
-                self.votes.yes + outstanding_votes < threshold
+                let outstanding_votes = self.total_power - votes_to_consider.total();
+                votes_to_consider.yes + outstanding_votes < threshold
             }
         }
     }
@@ -311,7 +358,9 @@ mod test {
             threshold,
             veto: None,
             total_power,
-            votes,
+            votes: votes.clone(),
+            individual_votes: votes,
+            delegation_module: None,
         };
         (prop, block)
     }

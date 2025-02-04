@@ -18,8 +18,8 @@ pub struct TokenIndexes<'a> {
     pub recipient: MultiIndex<'a, String, VestingContract, String>,
 }
 
-impl<'a> IndexList<VestingContract> for TokenIndexes<'a> {
-    fn get_indexes(&'_ self) -> Box<dyn Iterator<Item = &'_ dyn Index<VestingContract>> + '_> {
+impl IndexList<VestingContract> for TokenIndexes<'_> {
+    fn get_indexes(&self) -> Box<dyn Iterator<Item = &dyn Index<VestingContract>> + '_> {
         let v: Vec<&dyn Index<VestingContract>> = vec![&self.instantiator, &self.recipient];
         Box::new(v.into_iter())
     }

@@ -111,6 +111,7 @@ fn test_counters() {
         pre_propose_info: PreProposeInfo::AnyoneMayPropose {},
         close_proposal_on_execution_failure: true,
         veto: None,
+        delegation_module: None,
     };
 
     let governance_addr =

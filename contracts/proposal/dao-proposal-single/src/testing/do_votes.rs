@@ -142,6 +142,7 @@ where
         allow_revoting: false,
         close_proposal_on_execution_failure: true,
         pre_propose_info,
+        delegation_module: None,
     };
 
     let core_addr = setup_governance(&mut app, instantiate, Some(initial_balances));

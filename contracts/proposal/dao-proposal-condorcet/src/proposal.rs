@@ -62,7 +62,7 @@ fn status(block: &BlockInfo, proposal: &Proposal, tally: &Tally) -> Status {
         Status::Open => {
             if proposal
                 .min_voting_period
-                .map_or(false, |min| !min.is_expired(block))
+                .is_some_and(|min| !min.is_expired(block))
             {
                 return Status::Open;
             }

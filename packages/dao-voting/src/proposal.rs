@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{CosmosMsg, Empty};
+use cosmwasm_std::{CosmosMsg, Empty, Uint128};
 
 use crate::{
     multiple_choice::{MultipleChoiceAutoVote, MultipleChoiceOptions},
@@ -67,4 +67,20 @@ pub struct MultipleChoiceProposeMsg {
     pub proposer: Option<String>,
     /// An optional vote cast by the proposer.
     pub vote: Option<MultipleChoiceAutoVote>,
+}
+
+/// A vote cast for a proposal.
+#[cw_serde]
+pub struct Ballot<Vote> {
+    /// The amount of voting power behind the vote, including any delegated VP.
+    /// This is the amount tallied in the proposal for this ballot.
+    pub power: Uint128,
+    /// The position.
+    pub vote: Vote,
+
+    /// An optional rationale for why this vote was cast. If the key
+    /// is missing (i.e. the ballot was cast in a v1 proposal module),
+    /// we deserialize into None (i.e. Option::default()).
+    #[serde(default)]
+    pub rationale: Option<String>,
 }

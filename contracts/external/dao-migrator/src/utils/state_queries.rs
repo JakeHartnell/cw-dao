@@ -81,9 +81,11 @@ pub fn query_proposal_v1(
                 total_power: proposal.total_power,
                 msgs: proposal.msgs,
                 status: v1_status_to_v2(proposal.status),
-                votes: v1_votes_to_v2(proposal.votes),
+                votes: v1_votes_to_v2(proposal.votes.clone()),
+                individual_votes: v1_votes_to_v2(proposal.votes),
                 allow_revoting: proposal.allow_revoting,
                 veto: None,
+                delegation_module: None,
             })
         })
         .collect::<Result<Vec<dao_proposal_single::proposal::SingleChoiceProposal>, ContractError>>(

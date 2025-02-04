@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Uint128};
+use cosmwasm_std::Addr;
 use cw_hooks::Hooks;
 use cw_storage_plus::{Item, Map};
 use cw_utils::Duration;
@@ -9,20 +9,7 @@ use dao_voting::{
 
 use crate::proposal::SingleChoiceProposal;
 
-/// A vote cast for a proposal.
-#[cw_serde]
-pub struct Ballot {
-    /// The amount of voting power behind the vote.
-    pub power: Uint128,
-    /// The position.
-    pub vote: Vote,
-
-    /// An optional rationale for why this vote was cast. If the key
-    /// is missing (i.e. the ballot was cast in a v1 proposal module),
-    /// we deserialize into None (i.e. Option::default()).
-    #[serde(default)]
-    pub rationale: Option<String>,
-}
+pub type Ballot = dao_voting::proposal::Ballot<Vote>;
 
 /// The governance module's configuration.
 #[cw_serde]
@@ -77,3 +64,6 @@ pub const VOTE_HOOKS: Hooks = Hooks::new("vote_hooks");
 /// The address of the pre-propose module associated with this
 /// proposal module (if any).
 pub const CREATION_POLICY: Item<ProposalCreationPolicy> = Item::new("creation_policy");
+/// The address of the delegation module associated with this proposal module
+/// (if any).
+pub const DELEGATION_MODULE: Item<Addr> = Item::new("delegation_module");

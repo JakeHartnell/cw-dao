@@ -1,0 +1,1161 @@
+{
+  "contract_name": "dao-vote-delegation",
+  "contract_version": "2.7.0-alpha.2",
+  "idl_version": "1.0.0",
+  "instantiate": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "InstantiateMsg",
+    "type": "object",
+    "properties": {
+      "dao": {
+        "description": "The DAO. If not provided, the instantiator is used.",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "delegation_validity_blocks": {
+        "description": "the number of blocks a delegation is valid for, after which it must be renewed by the delegator. if not set, the delegation will never expire.",
+        "type": [
+          "integer",
+          "null"
+        ],
+        "format": "uint64",
+        "minimum": 0.0
+      },
+      "max_delegations": {
+        "description": "the total number of delegations a member can have. this should be set based on the max gas allowed in a single block for the given chain.\n\nthis limit is relevant for two reasons: 1. when voting power is updated for a delegator, we must loop through all of their delegates and update their delegated voting power 2. when a delegator casts a vote on a proposal that overrides their delegates' votes, we must loop through all of their delegates and update the proposal vote tally accordingly\n\nin tests on Neutron, with a block max gas of 30M (which is one of the lowest gas limits on any chain), we found that 50 delegations is a safe upper bound, so this defaults to 50.",
+        "type": [
+          "integer",
+          "null"
+        ],
+        "format": "uint64",
+        "minimum": 0.0
+      },
+      "no_sync_proposal_modules": {
+        "description": "Whether or not to sync proposal modules initially. If there are too many, the instantiation will run out of gas, so this should be disabled and `SyncProposalModules` called manually.\n\nDefaults to false.",
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "vp_cap_percent": {
+        "description": "the maximum percent of voting power that a single delegate can wield. they can be delegated any amount of voting power—this cap is only applied when casting votes.",
+        "anyOf": [
+          {
+            "$ref": "#/definitions/Decimal"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "vp_hook_callers": {
+        "description": "The authorized voting power changed hook callers.",
+        "type": [
+          "array",
+          "null"
+        ],
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "additionalProperties": false,
+    "definitions": {
+      "Decimal": {
+        "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 (which is (2^128 - 1) / 10^18)",
+        "type": "string"
+      }
+    }
+  },
+  "execute": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "ExecuteMsg",
+    "oneOf": [
+      {
+        "description": "Register as a delegate.",
+        "type": "object",
+        "required": [
+          "register"
+        ],
+        "properties": {
+          "register": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Unregister as a delegate.",
+        "type": "object",
+        "required": [
+          "unregister"
+        ],
+        "properties": {
+          "unregister": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Create a delegation or update an existing one.",
+        "type": "object",
+        "required": [
+          "delegate"
+        ],
+        "properties": {
+          "delegate": {
+            "type": "object",
+            "required": [
+              "delegate",
+              "percent"
+            ],
+            "properties": {
+              "delegate": {
+                "description": "the delegate to delegate to",
+                "type": "string"
+              },
+              "percent": {
+                "description": "the percent of voting power to delegate",
+                "allOf": [
+                  {
+                    "$ref": "#/definitions/Decimal"
+                  }
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Revoke a delegation.",
+        "type": "object",
+        "required": [
+          "undelegate"
+        ],
+        "properties": {
+          "undelegate": {
+            "type": "object",
+            "required": [
+              "delegate"
+            ],
+            "properties": {
+              "delegate": {
+                "description": "the delegate to undelegate from",
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Update the authorized voting power changed hook callers.",
+        "type": "object",
+        "required": [
+          "update_voting_power_hook_callers"
+        ],
+        "properties": {
+          "update_voting_power_hook_callers": {
+            "type": "object",
+            "properties": {
+              "add": {
+                "description": "the addresses to add.",
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              },
+              "remove": {
+                "description": "the addresses to remove.",
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Sync the active proposal modules from the DAO. Can be called by anyone.",
+        "type": "object",
+        "required": [
+          "sync_proposal_modules"
+        ],
+        "properties": {
+          "sync_proposal_modules": {
+            "type": "object",
+            "properties": {
+              "limit": {
+                "description": "the maximum number of proposal modules to return. passed through to the DAO proposal modules query.",
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint32",
+                "minimum": 0.0
+              },
+              "start_after": {
+                "description": "the proposal module to start after, if any. passed through to the DAO proposal modules query.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Updates the configuration of the delegation system.",
+        "type": "object",
+        "required": [
+          "update_config"
+        ],
+        "properties": {
+          "update_config": {
+            "type": "object",
+            "required": [
+              "delegation_validity_blocks",
+              "vp_cap_percent"
+            ],
+            "properties": {
+              "delegation_validity_blocks": {
+                "description": "the number of blocks a delegation is valid for, after which it must be renewed by the delegator. if not set, the delegation will never expire.",
+                "allOf": [
+                  {
+                    "$ref": "#/definitions/OptionalUpdate_for_uint64"
+                  }
+                ]
+              },
+              "max_delegations": {
+                "description": "the total number of delegations a member can have. this should be set based on the max gas allowed in a single block for the given chain.\n\nthis limit is relevant for two reasons: 1. when voting power is updated for a delegator, we must loop through all of their delegates and update their delegated voting power 2. when a delegator casts a vote on a proposal that overrides their delegates' votes, we must loop through all of their delegates and update the proposal vote tally accordingly",
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "vp_cap_percent": {
+                "description": "the maximum percent of voting power that a single delegate can wield. they can be delegated any amount of voting power—this cap is only applied when casting votes.",
+                "allOf": [
+                  {
+                    "$ref": "#/definitions/OptionalUpdate_for_Decimal"
+                  }
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Called when a member is added or removed to a cw4-groups or cw721-roles contract.",
+        "type": "object",
+        "required": [
+          "member_changed_hook"
+        ],
+        "properties": {
+          "member_changed_hook": {
+            "$ref": "#/definitions/MemberChangedHookMsg"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Called when NFTs are staked or unstaked.",
+        "type": "object",
+        "required": [
+          "nft_stake_change_hook"
+        ],
+        "properties": {
+          "nft_stake_change_hook": {
+            "$ref": "#/definitions/NftStakeChangedHookMsg"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Called when tokens are staked or unstaked.",
+        "type": "object",
+        "required": [
+          "stake_change_hook"
+        ],
+        "properties": {
+          "stake_change_hook": {
+            "$ref": "#/definitions/StakeChangedHookMsg"
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Called when a vote is cast.",
+        "type": "object",
+        "required": [
+          "vote_hook"
+        ],
+        "properties": {
+          "vote_hook": {
+            "$ref": "#/definitions/VoteHookMsg"
+          }
+        },
+        "additionalProperties": false
+      }
+    ],
+    "definitions": {
+      "Addr": {
+        "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
+        "type": "string"
+      },
+      "Decimal": {
+        "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 (which is (2^128 - 1) / 10^18)",
+        "type": "string"
+      },
+      "MemberChangedHookMsg": {
+        "description": "MemberChangedHookMsg should be de/serialized under `MemberChangedHook()` variant in a ExecuteMsg. This contains a list of all diffs on the given transaction.",
+        "type": "object",
+        "required": [
+          "diffs"
+        ],
+        "properties": {
+          "diffs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/MemberDiff"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "MemberDiff": {
+        "description": "MemberDiff shows the old and new states for a given cw4 member They cannot both be None. old = None, new = Some -> Insert old = Some, new = Some -> Update old = Some, new = None -> Delete",
+        "type": "object",
+        "required": [
+          "key"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "new": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "old": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        },
+        "additionalProperties": false
+      },
+      "NftStakeChangedHookMsg": {
+        "description": "An enum representing NFT staking hooks.",
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "stake"
+            ],
+            "properties": {
+              "stake": {
+                "type": "object",
+                "required": [
+                  "addr",
+                  "token_id"
+                ],
+                "properties": {
+                  "addr": {
+                    "$ref": "#/definitions/Addr"
+                  },
+                  "token_id": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "unstake"
+            ],
+            "properties": {
+              "unstake": {
+                "type": "object",
+                "required": [
+                  "addr",
+                  "token_ids"
+                ],
+                "properties": {
+                  "addr": {
+                    "$ref": "#/definitions/Addr"
+                  },
+                  "token_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "OptionalUpdate_for_Decimal": {
+        "description": "An update type that allows partial updates of optional fields.",
+        "anyOf": [
+          {
+            "$ref": "#/definitions/Update_for_Decimal"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "OptionalUpdate_for_uint64": {
+        "description": "An update type that allows partial updates of optional fields.",
+        "anyOf": [
+          {
+            "$ref": "#/definitions/Update_for_uint64"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "StakeChangedHookMsg": {
+        "description": "An enum representing staking hooks.",
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "stake"
+            ],
+            "properties": {
+              "stake": {
+                "type": "object",
+                "required": [
+                  "addr",
+                  "amount"
+                ],
+                "properties": {
+                  "addr": {
+                    "$ref": "#/definitions/Addr"
+                  },
+                  "amount": {
+                    "$ref": "#/definitions/Uint128"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "unstake"
+            ],
+            "properties": {
+              "unstake": {
+                "type": "object",
+                "required": [
+                  "addr",
+                  "amount"
+                ],
+                "properties": {
+                  "addr": {
+                    "$ref": "#/definitions/Addr"
+                  },
+                  "amount": {
+                    "$ref": "#/definitions/Uint128"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "Uint128": {
+        "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding, such that the full u128 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n``` # use cosmwasm_std::Uint128; let a = Uint128::from(123u128); assert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64); assert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```",
+        "type": "string"
+      },
+      "Update_for_Decimal": {
+        "oneOf": [
+          {
+            "type": "string",
+            "enum": [
+              "clear"
+            ]
+          },
+          {
+            "type": "object",
+            "required": [
+              "set"
+            ],
+            "properties": {
+              "set": {
+                "$ref": "#/definitions/Decimal"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "Update_for_uint64": {
+        "oneOf": [
+          {
+            "type": "string",
+            "enum": [
+              "clear"
+            ]
+          },
+          {
+            "type": "object",
+            "required": [
+              "set"
+            ],
+            "properties": {
+              "set": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "VoteHookMsg": {
+        "description": "An enum representing vote hooks, fired when new votes are cast.",
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "new_vote"
+            ],
+            "properties": {
+              "new_vote": {
+                "type": "object",
+                "required": [
+                  "height",
+                  "individual_power",
+                  "is_first_vote",
+                  "power",
+                  "proposal_id",
+                  "vote",
+                  "voter"
+                ],
+                "properties": {
+                  "height": {
+                    "description": "The block height at which the voting power is calculated.",
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  },
+                  "individual_power": {
+                    "description": "The individual voting power of the voter (excluding any delegated voting power).",
+                    "allOf": [
+                      {
+                        "$ref": "#/definitions/Uint128"
+                      }
+                    ]
+                  },
+                  "is_first_vote": {
+                    "description": "Whether this is the first vote cast by this voter on this proposal. This will always be true if revoting is disabled.",
+                    "type": "boolean"
+                  },
+                  "power": {
+                    "description": "The total voting power of the voter.",
+                    "allOf": [
+                      {
+                        "$ref": "#/definitions/Uint128"
+                      }
+                    ]
+                  },
+                  "proposal_id": {
+                    "description": "The proposal ID that was voted on.",
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  },
+                  "vote": {
+                    "description": "The vote that was cast.",
+                    "type": "string"
+                  },
+                  "voter": {
+                    "description": "The voter that cast the vote.",
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      }
+    }
+  },
+  "query": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "QueryMsg",
+    "oneOf": [
+      {
+        "description": "Returns contract version info",
+        "type": "object",
+        "required": [
+          "info"
+        ],
+        "properties": {
+          "info": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Returns registration info for a delegate, optionally at a given height.",
+        "type": "object",
+        "required": [
+          "registration"
+        ],
+        "properties": {
+          "registration": {
+            "type": "object",
+            "required": [
+              "delegate"
+            ],
+            "properties": {
+              "delegate": {
+                "type": "string"
+              },
+              "height": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Returns the paginated list of active delegates.",
+        "type": "object",
+        "required": [
+          "delegates"
+        ],
+        "properties": {
+          "delegates": {
+            "type": "object",
+            "properties": {
+              "limit": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint32",
+                "minimum": 0.0
+              },
+              "start_after": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Returns the delegations by a delegator, optionally at a given height. Uses the current block height if not provided.",
+        "type": "object",
+        "required": [
+          "delegations"
+        ],
+        "properties": {
+          "delegations": {
+            "type": "object",
+            "required": [
+              "delegator"
+            ],
+            "properties": {
+              "delegator": {
+                "type": "string"
+              },
+              "height": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "limit": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "offset": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Returns the VP delegated to a delegate that has not yet been used in votes cast by delegators in a specific proposal. This updates immediately via vote hooks (instead of being delayed 1 block like other historical queries), making it safe to vote multiple times in the same block. Proposal modules are responsible for maintaining the effective VP cap when a delegator overrides a delegate's vote.",
+        "type": "object",
+        "required": [
+          "unvoted_delegated_voting_power"
+        ],
+        "properties": {
+          "unvoted_delegated_voting_power": {
+            "type": "object",
+            "required": [
+              "delegate",
+              "height",
+              "proposal_id",
+              "proposal_module"
+            ],
+            "properties": {
+              "delegate": {
+                "type": "string"
+              },
+              "height": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "proposal_id": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "proposal_module": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Returns the proposal modules synced from the DAO.",
+        "type": "object",
+        "required": [
+          "proposal_modules"
+        ],
+        "properties": {
+          "proposal_modules": {
+            "type": "object",
+            "properties": {
+              "limit": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint32",
+                "minimum": 0.0
+              },
+              "start_after": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Returns the voting power hook callers.",
+        "type": "object",
+        "required": [
+          "voting_power_hook_callers"
+        ],
+        "properties": {
+          "voting_power_hook_callers": {
+            "type": "object",
+            "properties": {
+              "limit": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint32",
+                "minimum": 0.0
+              },
+              "start_after": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Returns the config.",
+        "type": "object",
+        "required": [
+          "config"
+        ],
+        "properties": {
+          "config": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    ]
+  },
+  "migrate": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "MigrateMsg",
+    "type": "object",
+    "additionalProperties": false
+  },
+  "sudo": null,
+  "responses": {
+    "config": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Config",
+      "type": "object",
+      "required": [
+        "max_delegations"
+      ],
+      "properties": {
+        "delegation_validity_blocks": {
+          "description": "the number of blocks a delegation is valid for, after which it must be renewed by the delegator. if not set, the delegation will never expire.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "max_delegations": {
+          "description": "the total number of delegations a member can have. this should be set based on the max gas allowed in a single block for the given chain.\n\nthis limit is relevant for two reasons: 1. when voting power is updated for a delegator, we must loop through all of their delegates and update their delegated voting power 2. when a delegator casts a vote on a proposal that overrides their delegates' votes, we must loop through all of their delegates and update the proposal vote tally accordingly\n\nin tests on Neutron, with a block max gas of 30M (which is one of the lowest gas limits on any chain), we found that 50 delegations is a safe upper bound.",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        }
+      },
+      "additionalProperties": false
+    },
+    "delegates": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "DelegatesResponse",
+      "type": "object",
+      "required": [
+        "delegates"
+      ],
+      "properties": {
+        "delegates": {
+          "description": "The delegates.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DelegateResponse"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "definitions": {
+        "Addr": {
+          "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
+          "type": "string"
+        },
+        "DelegateResponse": {
+          "type": "object",
+          "required": [
+            "delegate",
+            "power"
+          ],
+          "properties": {
+            "delegate": {
+              "description": "The delegate.",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/Addr"
+                }
+              ]
+            },
+            "power": {
+              "description": "The total voting power delegated to the delegate.",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/Uint128"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "Uint128": {
+          "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding, such that the full u128 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n``` # use cosmwasm_std::Uint128; let a = Uint128::from(123u128); assert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64); assert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```",
+          "type": "string"
+        }
+      }
+    },
+    "delegations": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "DelegationsResponse",
+      "type": "object",
+      "required": [
+        "delegations",
+        "height"
+      ],
+      "properties": {
+        "delegations": {
+          "description": "The delegations.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DelegationResponse"
+          }
+        },
+        "height": {
+          "description": "The height at which the delegations were loaded.",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        }
+      },
+      "additionalProperties": false,
+      "definitions": {
+        "Addr": {
+          "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
+          "type": "string"
+        },
+        "Decimal": {
+          "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 (which is (2^128 - 1) / 10^18)",
+          "type": "string"
+        },
+        "DelegationResponse": {
+          "type": "object",
+          "required": [
+            "active",
+            "delegate",
+            "percent"
+          ],
+          "properties": {
+            "active": {
+              "description": "whether or not the delegation is active (i.e. the delegate is still registered at the corresponding block). this can only be false if the delegate was registered when the delegation was created and isn't anymore.",
+              "type": "boolean"
+            },
+            "delegate": {
+              "description": "the delegate that can vote on behalf of the delegator.",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/Addr"
+                }
+              ]
+            },
+            "percent": {
+              "description": "the percent of the delegator's voting power that is delegated to the delegate.",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/Decimal"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "info": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "InfoResponse",
+      "type": "object",
+      "required": [
+        "info"
+      ],
+      "properties": {
+        "info": {
+          "$ref": "#/definitions/ContractVersion"
+        }
+      },
+      "additionalProperties": false,
+      "definitions": {
+        "ContractVersion": {
+          "type": "object",
+          "required": [
+            "contract",
+            "version"
+          ],
+          "properties": {
+            "contract": {
+              "description": "contract is the crate name of the implementing contract, eg. `crate:cw20-base` we will use other prefixes for other languages, and their standard global namespacing",
+              "type": "string"
+            },
+            "version": {
+              "description": "version is any string that this implementation knows. It may be simple counter \"1\", \"2\". or semantic version on release tags \"v0.7.0\", or some custom feature flag list. the only code that needs to understand the version parsing is code that knows how to migrate from the given contract (and is tied to it's implementation somehow)",
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "proposal_modules": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Array_of_Addr",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Addr"
+      },
+      "definitions": {
+        "Addr": {
+          "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
+          "type": "string"
+        }
+      }
+    },
+    "registration": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "RegistrationResponse",
+      "type": "object",
+      "required": [
+        "height",
+        "power",
+        "registered"
+      ],
+      "properties": {
+        "height": {
+          "description": "The height at which registration was checked.",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "power": {
+          "description": "The total voting power delegated to the delegate. If not registered, this may still be nonzero if the delegate was registered in the past.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Uint128"
+            }
+          ]
+        },
+        "registered": {
+          "description": "Whether or not the delegate is registered.",
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false,
+      "definitions": {
+        "Uint128": {
+          "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding, such that the full u128 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n``` # use cosmwasm_std::Uint128; let a = Uint128::from(123u128); assert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64); assert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```",
+          "type": "string"
+        }
+      }
+    },
+    "unvoted_delegated_voting_power": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UnvotedDelegatedVotingPowerResponse",
+      "type": "object",
+      "required": [
+        "effective",
+        "total"
+      ],
+      "properties": {
+        "effective": {
+          "description": "The unvoted delegated voting power in effect, with configured constraints applied, such as the VP cap.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Uint128"
+            }
+          ]
+        },
+        "total": {
+          "description": "The total unvoted delegated voting power.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Uint128"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "definitions": {
+        "Uint128": {
+          "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding, such that the full u128 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n``` # use cosmwasm_std::Uint128; let a = Uint128::from(123u128); assert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64); assert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```",
+          "type": "string"
+        }
+      }
+    },
+    "voting_power_hook_callers": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Array_of_Addr",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Addr"
+      },
+      "definitions": {
+        "Addr": {
+          "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
+          "type": "string"
+        }
+      }
+    }
+  }
+}

@@ -1,4 +1,4 @@
-use cosmwasm_std::StdError;
+use cosmwasm_std::{OverflowError, StdError};
 use cw_hooks::HookError;
 use cw_utils::ParseReplyError;
 use dao_voting::{reply::error::TagError, threshold::ThresholdError, veto::VetoError};
@@ -17,6 +17,9 @@ pub enum ContractError {
 
     #[error(transparent)]
     VetoError(#[from] VetoError),
+
+    #[error(transparent)]
+    OverflowError(#[from] OverflowError),
 
     #[error("Unauthorized")]
     Unauthorized {},

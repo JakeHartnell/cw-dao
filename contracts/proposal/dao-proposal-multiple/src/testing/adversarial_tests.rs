@@ -283,6 +283,7 @@ pub fn test_allow_voting_after_proposal_execution_pre_expiration_cw20() {
         ),
         close_proposal_on_execution_failure: true,
         veto: None,
+        delegation_module: None,
     };
 
     let core_addr = instantiate_with_multiple_staked_balances_governance(

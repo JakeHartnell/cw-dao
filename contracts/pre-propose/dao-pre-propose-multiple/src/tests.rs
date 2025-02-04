@@ -1,7 +1,6 @@
 use cosmwasm_std::{
     coins, from_json, to_json_binary, Addr, Coin, CosmosMsg, Decimal, Empty, Uint128, WasmMsg,
 };
-use cpm::query::ProposalResponse;
 use cw2::ContractVersion;
 use cw20::Cw20Coin;
 use cw_denom::UncheckedDenom;
@@ -11,7 +10,7 @@ use dao_interface::proposal::InfoResponse;
 use dao_interface::state::ProposalModule;
 use dao_interface::state::{Admin, ModuleInstantiateInfo};
 use dao_pre_propose_base::{error::PreProposeError, msg::DepositInfoResponse, state::Config};
-use dao_proposal_multiple as cpm;
+use dao_proposal_multiple as dpm;
 use dao_testing::{
     contracts::{
         cw20_base_contract, cw4_group_contract, dao_pre_propose_multiple_contract,
@@ -49,7 +48,7 @@ fn get_default_proposal_module_instantiate(
     app: &mut App,
     deposit_info: Option<UncheckedDepositInfo>,
     open_proposal_submission: bool,
-) -> cpm::msg::InstantiateMsg {
+) -> dpm::msg::InstantiateMsg {
     let pre_propose_id = app.store_code(dao_pre_propose_multiple_contract());
 
     let submission_policy = if open_proposal_submission {
@@ -62,7 +61,7 @@ fn get_default_proposal_module_instantiate(
         }
     };
 
-    cpm::msg::InstantiateMsg {
+    dpm::msg::InstantiateMsg {
         voting_strategy: VotingStrategy::SingleChoice {
             quorum: PercentageThreshold::Percent(Decimal::percent(10)),
         },
@@ -86,6 +85,7 @@ fn get_default_proposal_module_instantiate(
         },
         close_proposal_on_execution_failure: false,
         veto: None,
+        delegation_module: None,
     }
 }
 
@@ -123,14 +123,14 @@ fn setup_default_test(
     deposit_info: Option<UncheckedDepositInfo>,
     open_proposal_submission: bool,
 ) -> DefaultTestSetup {
-    let cpm_id = app.store_code(dao_proposal_multiple_contract());
+    let dpm_id = app.store_code(dao_proposal_multiple_contract());
 
     let proposal_module_instantiate =
         get_default_proposal_module_instantiate(app, deposit_info, open_proposal_submission);
 
     let core_addr = instantiate_with_cw4_groups_governance(
         app,
-        cpm_id,
+        dpm_id,
         to_json_binary(&proposal_module_instantiate).unwrap(),
         Some(vec![
             cw20::Cw20Coin {
@@ -160,7 +160,7 @@ fn setup_default_test(
         .wrap()
         .query_wasm_smart(
             proposal_single.clone(),
-            &cpm::msg::QueryMsg::ProposalCreationPolicy {},
+            &dpm::msg::QueryMsg::ProposalCreationPolicy {},
         )
         .unwrap();
 
@@ -229,15 +229,15 @@ fn make_proposal(
 
     let id: u64 = app
         .wrap()
-        .query_wasm_smart(&proposal_module, &cpm::msg::QueryMsg::NextProposalId {})
+        .query_wasm_smart(&proposal_module, &dpm::msg::QueryMsg::NextProposalId {})
         .unwrap();
     let id = id - 1;
 
-    let proposal: ProposalResponse = app
+    let proposal: dpm::query::ProposalResponse = app
         .wrap()
         .query_wasm_smart(
             proposal_module,
-            &cpm::msg::QueryMsg::Proposal { proposal_id: id },
+            &dpm::msg::QueryMsg::Proposal { proposal_id: id },
         )
         .unwrap();
 
@@ -327,7 +327,7 @@ fn vote(
     app.execute_contract(
         Addr::unchecked(sender),
         module.clone(),
-        &cpm::msg::ExecuteMsg::Vote {
+        &dpm::msg::ExecuteMsg::Vote {
             proposal_id: id,
             vote: position,
             rationale: None,
@@ -336,9 +336,9 @@ fn vote(
     )
     .unwrap();
 
-    let proposal: ProposalResponse = app
+    let proposal: dpm::query::ProposalResponse = app
         .wrap()
-        .query_wasm_smart(module, &cpm::msg::QueryMsg::Proposal { proposal_id: id })
+        .query_wasm_smart(module, &dpm::msg::QueryMsg::Proposal { proposal_id: id })
         .unwrap();
 
     proposal.proposal.status
@@ -458,7 +458,7 @@ fn close_proposal(app: &mut App, module: Addr, sender: &str, proposal_id: u64) {
     app.execute_contract(
         Addr::unchecked(sender),
         module,
-        &cpm::msg::ExecuteMsg::Close { proposal_id },
+        &dpm::msg::ExecuteMsg::Close { proposal_id },
         &[],
     )
     .unwrap();
@@ -468,7 +468,7 @@ fn execute_proposal(app: &mut App, module: Addr, sender: &str, proposal_id: u64)
     app.execute_contract(
         Addr::unchecked(sender),
         module,
-        &cpm::msg::ExecuteMsg::Execute { proposal_id },
+        &dpm::msg::ExecuteMsg::Execute { proposal_id },
         &[],
     )
     .unwrap();
@@ -1329,12 +1329,12 @@ fn test_execute_extension_does_nothing() {
 fn test_instantiate_with_zero_native_deposit() {
     let mut app = App::default();
 
-    let cpm_id = app.store_code(dao_proposal_multiple_contract());
+    let dpm_id = app.store_code(dao_proposal_multiple_contract());
 
     let proposal_module_instantiate = {
         let pre_propose_id = app.store_code(dao_pre_propose_multiple_contract());
 
-        cpm::msg::InstantiateMsg {
+        dpm::msg::InstantiateMsg {
             voting_strategy: VotingStrategy::SingleChoice {
                 quorum: PercentageThreshold::Percent(Decimal::percent(10)),
             },
@@ -1368,13 +1368,14 @@ fn test_instantiate_with_zero_native_deposit() {
             },
             close_proposal_on_execution_failure: false,
             veto: None,
+            delegation_module: None,
         }
     };
 
     // Should panic.
     instantiate_with_cw4_groups_governance(
         &mut app,
-        cpm_id,
+        dpm_id,
         to_json_binary(&proposal_module_instantiate).unwrap(),
         Some(vec![
             cw20::Cw20Coin {
@@ -1396,12 +1397,12 @@ fn test_instantiate_with_zero_cw20_deposit() {
 
     let cw20_addr = instantiate_cw20_base_default(&mut app);
 
-    let cpm_id = app.store_code(dao_proposal_multiple_contract());
+    let dpm_id = app.store_code(dao_proposal_multiple_contract());
 
     let proposal_module_instantiate = {
         let pre_propose_id = app.store_code(dao_pre_propose_multiple_contract());
 
-        cpm::msg::InstantiateMsg {
+        dpm::msg::InstantiateMsg {
             voting_strategy: VotingStrategy::SingleChoice {
                 quorum: PercentageThreshold::Percent(Decimal::percent(10)),
             },
@@ -1435,13 +1436,14 @@ fn test_instantiate_with_zero_cw20_deposit() {
             },
             close_proposal_on_execution_failure: false,
             veto: None,
+            delegation_module: None,
         }
     };
 
     // Should panic.
     instantiate_with_cw4_groups_governance(
         &mut app,
-        cpm_id,
+        dpm_id,
         to_json_binary(&proposal_module_instantiate).unwrap(),
         Some(vec![
             cw20::Cw20Coin {
@@ -2203,7 +2205,7 @@ fn test_withdraw() {
         .wrap()
         .query_wasm_smart(
             proposal_single.clone(),
-            &cpm::msg::QueryMsg::ProposalCreationPolicy {},
+            &dpm::msg::QueryMsg::ProposalCreationPolicy {},
         )
         .unwrap();
 
@@ -2566,18 +2568,18 @@ fn test_migrate_from_v241() {
     app.execute_contract(
         Addr::unchecked("ekez"),
         proposal_single.clone(),
-        &dao_proposal_multiple::msg::ExecuteMsg::Execute { proposal_id: 3 },
+        &dpm_v241::msg::ExecuteMsg::Execute { proposal_id: 3 },
         &[],
     )
     .unwrap();
-    let proposal: ProposalResponse = app
+    let proposal: dpm_v241::query::ProposalResponse = app
         .wrap()
         .query_wasm_smart(
             proposal_single.clone(),
-            &dao_proposal_multiple::msg::QueryMsg::Proposal { proposal_id: 3 },
+            &dpm_v241::msg::QueryMsg::Proposal { proposal_id: 3 },
         )
         .unwrap();
-    assert_eq!(proposal.proposal.status, Status::Executed);
+    assert_eq!(proposal.proposal.status, dv_v241::status::Status::Executed);
 }
 
 #[test]
@@ -2965,9 +2967,9 @@ fn test_migrate_from_v241_with_policy_update() {
     app.execute_contract(
         Addr::unchecked("ekez"),
         proposal_single.clone(),
-        &dao_proposal_multiple::msg::ExecuteMsg::Vote {
+        &dpm_v241::msg::ExecuteMsg::Vote {
             proposal_id: 3,
-            vote: MultipleChoiceVote { option_id: 1 },
+            vote: dv_v241::multiple_choice::MultipleChoiceVote { option_id: 1 },
             rationale: None,
         },
         &[],
@@ -2976,16 +2978,16 @@ fn test_migrate_from_v241_with_policy_update() {
     app.execute_contract(
         Addr::unchecked("ekez"),
         proposal_single.clone(),
-        &dao_proposal_multiple::msg::ExecuteMsg::Execute { proposal_id: 3 },
+        &dpm_v241::msg::ExecuteMsg::Execute { proposal_id: 3 },
         &[],
     )
     .unwrap();
-    let proposal: ProposalResponse = app
+    let proposal: dpm_v241::query::ProposalResponse = app
         .wrap()
         .query_wasm_smart(
             proposal_single.clone(),
-            &dao_proposal_multiple::msg::QueryMsg::Proposal { proposal_id: 3 },
+            &dpm_v241::msg::QueryMsg::Proposal { proposal_id: 3 },
         )
         .unwrap();
-    assert_eq!(proposal.proposal.status, Status::Executed);
+    assert_eq!(proposal.proposal.status, dv_v241::status::Status::Executed);
 }

@@ -8,7 +8,7 @@ use cw_utils::Duration;
 use dao_interface::{token::InitialBalance, voting::InfoResponse};
 use dao_testing::{
     Cw20TestDao, Cw4TestDao, Cw721TestDao, DaoTestingSuite, DaoTestingSuiteBase, InitialNft,
-    TokenTestDao, GOV_DENOM, MEMBER1, MEMBER2, MEMBER3, OWNER,
+    TokenTestDao, ADDR0, ADDR1, ADDR2, GOV_DENOM, OWNER,
 };
 
 use crate::{
@@ -54,15 +54,15 @@ impl SuiteBuilder {
             },
             cw4_members: vec![
                 Member {
-                    addr: MEMBER1.to_string(),
+                    addr: ADDR0.to_string(),
                     weight: 2,
                 },
                 Member {
-                    addr: MEMBER2.to_string(),
+                    addr: ADDR1.to_string(),
                     weight: 1,
                 },
                 Member {
-                    addr: MEMBER3.to_string(),
+                    addr: ADDR2.to_string(),
                     weight: 1,
                 },
             ],
@@ -116,15 +116,15 @@ impl SuiteBuilder {
                     .cw20()
                     .with_initial_balances(vec![
                         Cw20Coin {
-                            address: MEMBER1.to_string(),
+                            address: ADDR0.to_string(),
                             amount: Uint128::new(100),
                         },
                         Cw20Coin {
-                            address: MEMBER2.to_string(),
+                            address: ADDR1.to_string(),
                             amount: Uint128::new(50),
                         },
                         Cw20Coin {
-                            address: MEMBER3.to_string(),
+                            address: ADDR2.to_string(),
                             amount: Uint128::new(50),
                         },
                     ])
@@ -143,19 +143,19 @@ impl SuiteBuilder {
                     .with_initial_nfts(vec![
                         InitialNft {
                             token_id: "1".to_string(),
-                            owner: MEMBER1.to_string(),
+                            owner: ADDR0.to_string(),
                         },
                         InitialNft {
                             token_id: "2".to_string(),
-                            owner: MEMBER1.to_string(),
+                            owner: ADDR0.to_string(),
                         },
                         InitialNft {
                             token_id: "3".to_string(),
-                            owner: MEMBER2.to_string(),
+                            owner: ADDR1.to_string(),
                         },
                         InitialNft {
                             token_id: "4".to_string(),
-                            owner: MEMBER3.to_string(),
+                            owner: ADDR2.to_string(),
                         },
                     ])
                     .dao();
@@ -171,15 +171,15 @@ impl SuiteBuilder {
                     .token()
                     .with_initial_balances(vec![
                         InitialBalance {
-                            address: MEMBER1.to_string(),
+                            address: ADDR0.to_string(),
                             amount: Uint128::new(100),
                         },
                         InitialBalance {
-                            address: MEMBER2.to_string(),
+                            address: ADDR1.to_string(),
                             amount: Uint128::new(50),
                         },
                         InitialBalance {
-                            address: MEMBER3.to_string(),
+                            address: ADDR2.to_string(),
                             amount: Uint128::new(50),
                         },
                     ])
@@ -321,11 +321,7 @@ impl Suite {
             cw20::Expiration::Never {} => return 0,
         };
 
-        if expiration_unit > current_unit {
-            expiration_unit - current_unit
-        } else {
-            0
-        }
+        expiration_unit.saturating_sub(current_unit)
     }
 
     pub fn get_balance_native<T: Into<String>, U: Into<String>>(

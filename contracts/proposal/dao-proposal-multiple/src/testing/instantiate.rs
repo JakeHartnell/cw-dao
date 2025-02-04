@@ -81,6 +81,7 @@ pub fn _get_default_token_dao_proposal_module_instantiate(app: &mut App) -> Inst
         ),
         close_proposal_on_execution_failure: true,
         veto: None,
+        delegation_module: None,
     }
 }
 
@@ -98,6 +99,7 @@ fn _get_default_non_token_dao_proposal_module_instantiate(app: &mut App) -> Inst
         pre_propose_info: get_pre_propose_info(app, None, false),
         close_proposal_on_execution_failure: true,
         veto: None,
+        delegation_module: None,
     }
 }
 

@@ -8,7 +8,7 @@ use cw_multi_test::Executor;
 use cw_ownable::OwnershipError;
 use cw_utils::Duration;
 use dao_interface::voting::InfoResponse;
-use dao_testing::{DaoTestingSuite, GOV_DENOM, MEMBER1, MEMBER2, MEMBER3, MEMBER4, OWNER};
+use dao_testing::{DaoTestingSuite, ADDR0, ADDR1, ADDR2, ADDR3, GOV_DENOM, OWNER};
 
 use crate::contract::{CONTRACT_NAME, CONTRACT_VERSION};
 use crate::msg::ExecuteMsg;
@@ -74,24 +74,24 @@ fn test_native_dao_rewards_update_reward_rate() {
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
 
     suite.assert_undistributed_rewards(1, 90_000_000);
 
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 10_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR0, 1, 10_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR2, 1, 5_000_000);
 
     suite.assert_undistributed_rewards(1, 80_000_000);
 
-    // MEMBER1 claims rewards
-    suite.claim_rewards(MEMBER1, 1);
-    suite.assert_pending_rewards(MEMBER1, 1, 0);
+    // ADDR0 claims rewards
+    suite.claim_rewards(ADDR0, 1);
+    suite.assert_pending_rewards(ADDR0, 1, 0);
 
     // set the rewards rate to half of the current one
     // now there will be 5_000_000 tokens distributed over 100_000 blocks
@@ -100,9 +100,9 @@ fn test_native_dao_rewards_update_reward_rate() {
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 6_250_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 6_250_000);
+    suite.assert_pending_rewards(ADDR0, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR1, 1, 6_250_000);
+    suite.assert_pending_rewards(ADDR2, 1, 6_250_000);
 
     suite.assert_undistributed_rewards(1, 75_000_000);
 
@@ -113,18 +113,18 @@ fn test_native_dao_rewards_update_reward_rate() {
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 7_500_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 8_750_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 8_750_000);
+    suite.assert_pending_rewards(ADDR0, 1, 7_500_000);
+    suite.assert_pending_rewards(ADDR1, 1, 8_750_000);
+    suite.assert_pending_rewards(ADDR2, 1, 8_750_000);
 
     suite.assert_undistributed_rewards(1, 65_000_000);
 
     // skip 2/10ths of the time
     suite.skip_blocks(200_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 17_500_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 13_750_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 13_750_000);
+    suite.assert_pending_rewards(ADDR0, 1, 17_500_000);
+    suite.assert_pending_rewards(ADDR1, 1, 13_750_000);
+    suite.assert_pending_rewards(ADDR2, 1, 13_750_000);
 
     suite.assert_undistributed_rewards(1, 45_000_000);
 
@@ -135,44 +135,44 @@ fn test_native_dao_rewards_update_reward_rate() {
     suite.skip_blocks(100_000);
 
     // assert no pending rewards changed
-    suite.assert_pending_rewards(MEMBER1, 1, 17_500_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 13_750_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 13_750_000);
+    suite.assert_pending_rewards(ADDR0, 1, 17_500_000);
+    suite.assert_pending_rewards(ADDR1, 1, 13_750_000);
+    suite.assert_pending_rewards(ADDR2, 1, 13_750_000);
 
     suite.assert_undistributed_rewards(1, 45_000_000);
 
-    // assert MEMBER1 pre-claim balance
-    suite.assert_native_balance(MEMBER1, GOV_DENOM, 10_000_000);
-    // MEMBER1 claims their rewards
-    suite.claim_rewards(MEMBER1, 1);
-    // assert MEMBER1 post-claim balance to be pre-claim + pending
-    suite.assert_native_balance(MEMBER1, GOV_DENOM, 10_000_000 + 17_500_000);
-    // assert MEMBER1 is now entitled to 0 pending rewards
-    suite.assert_pending_rewards(MEMBER1, 1, 0);
+    // assert ADDR0 pre-claim balance
+    suite.assert_native_balance(ADDR0, GOV_DENOM, 10_000_000);
+    // ADDR0 claims their rewards
+    suite.claim_rewards(ADDR0, 1);
+    // assert ADDR0 post-claim balance to be pre-claim + pending
+    suite.assert_native_balance(ADDR0, GOV_DENOM, 10_000_000 + 17_500_000);
+    // assert ADDR0 is now entitled to 0 pending rewards
+    suite.assert_pending_rewards(ADDR0, 1, 0);
 
     // user 2 unstakes their stake
-    suite.unstake_native_tokens(MEMBER2, 50);
+    suite.unstake_native_tokens(ADDR1, 50);
 
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    // only the MEMBER1 pending rewards should have changed
-    suite.assert_pending_rewards(MEMBER1, 1, 0);
-    suite.assert_pending_rewards(MEMBER2, 1, 13_750_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 13_750_000);
+    // only the ADDR0 pending rewards should have changed
+    suite.assert_pending_rewards(ADDR0, 1, 0);
+    suite.assert_pending_rewards(ADDR1, 1, 13_750_000);
+    suite.assert_pending_rewards(ADDR2, 1, 13_750_000);
 
     suite.assert_undistributed_rewards(1, 45_000_000);
 
-    // MEMBER2 claims their rewards (has 50 to begin with as they unstaked)
-    suite.assert_native_balance(MEMBER2, GOV_DENOM, 50);
-    suite.claim_rewards(MEMBER2, 1);
-    // assert MEMBER2 post-claim balance to be pre-claim + pending and has 0 pending rewards
-    suite.assert_native_balance(MEMBER2, GOV_DENOM, 13_750_000 + 50);
-    suite.assert_pending_rewards(MEMBER2, 1, 0);
+    // ADDR1 claims their rewards (has 50 to begin with as they unstaked)
+    suite.assert_native_balance(ADDR1, GOV_DENOM, 50);
+    suite.claim_rewards(ADDR1, 1);
+    // assert ADDR1 post-claim balance to be pre-claim + pending and has 0 pending rewards
+    suite.assert_native_balance(ADDR1, GOV_DENOM, 13_750_000 + 50);
+    suite.assert_pending_rewards(ADDR1, 1, 0);
 
     // update the reward rate back to 1_000 / 10blocks
     // this should now distribute 10_000_000 tokens over 100_000 blocks
-    // between MEMBER1 (2/3rds) and MEMBER3 (1/3rd)
+    // between ADDR0 (2/3rds) and ADDR2 (1/3rd)
     suite.update_emission_rate(1, Duration::Height(10), 1000, true);
 
     // update with the same rate does nothing
@@ -182,37 +182,37 @@ fn test_native_dao_rewards_update_reward_rate() {
     suite.skip_blocks(100_000);
 
     // assert that rewards are being distributed at the expected rate
-    suite.assert_pending_rewards(MEMBER1, 1, 6_666_666);
-    suite.assert_pending_rewards(MEMBER2, 1, 0);
-    suite.assert_pending_rewards(MEMBER3, 1, 13_750_000 + 3_333_333);
+    suite.assert_pending_rewards(ADDR0, 1, 6_666_666);
+    suite.assert_pending_rewards(ADDR1, 1, 0);
+    suite.assert_pending_rewards(ADDR2, 1, 13_750_000 + 3_333_333);
 
     suite.assert_undistributed_rewards(1, 35_000_000);
 
-    // MEMBER3 claims their rewards
-    suite.assert_native_balance(MEMBER3, GOV_DENOM, 0);
-    suite.claim_rewards(MEMBER3, 1);
-    suite.assert_pending_rewards(MEMBER3, 1, 0);
-    suite.assert_native_balance(MEMBER3, GOV_DENOM, 13_750_000 + 3_333_333);
+    // ADDR2 claims their rewards
+    suite.assert_native_balance(ADDR2, GOV_DENOM, 0);
+    suite.claim_rewards(ADDR2, 1);
+    suite.assert_pending_rewards(ADDR2, 1, 0);
+    suite.assert_native_balance(ADDR2, GOV_DENOM, 13_750_000 + 3_333_333);
 
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 6_666_666 + 6_666_666 + 1);
-    suite.assert_pending_rewards(MEMBER2, 1, 0);
-    suite.assert_pending_rewards(MEMBER3, 1, 3_333_333);
+    suite.assert_pending_rewards(ADDR0, 1, 6_666_666 + 6_666_666 + 1);
+    suite.assert_pending_rewards(ADDR1, 1, 0);
+    suite.assert_pending_rewards(ADDR2, 1, 3_333_333);
 
     suite.assert_undistributed_rewards(1, 25_000_000);
 
     // claim everything so that there are 0 pending rewards
-    suite.claim_rewards(MEMBER3, 1);
-    suite.claim_rewards(MEMBER1, 1);
+    suite.claim_rewards(ADDR2, 1);
+    suite.claim_rewards(ADDR0, 1);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 0);
-    suite.assert_pending_rewards(MEMBER2, 1, 0);
-    suite.assert_pending_rewards(MEMBER3, 1, 0);
+    suite.assert_pending_rewards(ADDR0, 1, 0);
+    suite.assert_pending_rewards(ADDR1, 1, 0);
+    suite.assert_pending_rewards(ADDR2, 1, 0);
 
     // update the rewards rate to 40_000_000 per 100_000 blocks.
-    // split is still 2/3rds to MEMBER1 and 1/3rd to MEMBER3
+    // split is still 2/3rds to ADDR0 and 1/3rd to ADDR2
     suite.update_emission_rate(1, Duration::Height(10), 4000, true);
     suite.assert_ends_at(Expiration::AtHeight(1_062_500));
 
@@ -220,35 +220,35 @@ fn test_native_dao_rewards_update_reward_rate() {
 
     let addr1_pending = 20_000_000 * 2 / 3;
     let addr3_pending = 20_000_000 / 3;
-    suite.assert_pending_rewards(MEMBER1, 1, addr1_pending);
-    suite.assert_pending_rewards(MEMBER2, 1, 0);
-    suite.assert_pending_rewards(MEMBER3, 1, addr3_pending);
+    suite.assert_pending_rewards(ADDR0, 1, addr1_pending);
+    suite.assert_pending_rewards(ADDR1, 1, 0);
+    suite.assert_pending_rewards(ADDR2, 1, addr3_pending);
 
     suite.assert_undistributed_rewards(1, 5_000_000);
 
-    // MEMBER2 wakes up to the increased staking rate and stakes 50 tokens
-    // this brings new split to: [MEMBER1: 50%, MEMBER2: 25%, MEMBER3: 25%]
-    suite.stake_native_tokens(MEMBER2, 50);
+    // ADDR1 wakes up to the increased staking rate and stakes 50 tokens
+    // this brings new split to: [ADDR0: 50%, ADDR1: 25%, ADDR2: 25%]
+    suite.stake_native_tokens(ADDR1, 50);
 
     suite.skip_blocks(10_000); // allocates 4_000_000 tokens
 
-    suite.assert_pending_rewards(MEMBER1, 1, addr1_pending + 4_000_000 * 2 / 4);
-    suite.assert_pending_rewards(MEMBER2, 1, 4_000_000 / 4);
-    suite.assert_pending_rewards(MEMBER3, 1, addr3_pending + 4_000_000 / 4);
+    suite.assert_pending_rewards(ADDR0, 1, addr1_pending + 4_000_000 * 2 / 4);
+    suite.assert_pending_rewards(ADDR1, 1, 4_000_000 / 4);
+    suite.assert_pending_rewards(ADDR2, 1, addr3_pending + 4_000_000 / 4);
 
     suite.assert_undistributed_rewards(1, 1_000_000);
 
-    suite.claim_rewards(MEMBER1, 1);
-    suite.claim_rewards(MEMBER3, 1);
+    suite.claim_rewards(ADDR0, 1);
+    suite.claim_rewards(ADDR2, 1);
     let addr1_pending = 0;
     let addr3_pending = 0;
     suite.skip_blocks(10_000); // skips from 1,060,000 to 1,070,000, and the end is 1,062,500, so this allocates only 1_000_000 tokens instead of 4_000_000
 
-    suite.assert_pending_rewards(MEMBER1, 1, addr1_pending + 1_000_000 * 2 / 4);
-    suite.assert_pending_rewards(MEMBER2, 1, 4_000_000 / 4 + 1_000_000 / 4);
-    suite.assert_pending_rewards(MEMBER3, 1, addr3_pending + 1_000_000 / 4);
+    suite.assert_pending_rewards(ADDR0, 1, addr1_pending + 1_000_000 * 2 / 4);
+    suite.assert_pending_rewards(ADDR1, 1, 4_000_000 / 4 + 1_000_000 / 4);
+    suite.assert_pending_rewards(ADDR2, 1, addr3_pending + 1_000_000 / 4);
 
-    suite.claim_rewards(MEMBER2, 1);
+    suite.claim_rewards(ADDR1, 1);
 
     suite.assert_undistributed_rewards(1, 0);
 
@@ -277,20 +277,20 @@ fn test_native_dao_rewards_reward_rate_switch_unit() {
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
 
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 10_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR0, 1, 10_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR2, 1, 5_000_000);
 
-    // MEMBER1 claims rewards
-    suite.claim_rewards(MEMBER1, 1);
-    suite.assert_pending_rewards(MEMBER1, 1, 0);
+    // ADDR0 claims rewards
+    suite.claim_rewards(ADDR0, 1);
+    suite.assert_pending_rewards(ADDR0, 1, 0);
 
     // set the rewards rate to time-based rewards
     suite.update_emission_rate(1, Duration::Time(10), 500, true);
@@ -298,9 +298,9 @@ fn test_native_dao_rewards_reward_rate_switch_unit() {
     // skip 1/10th of the time
     suite.skip_seconds(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 6_250_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 6_250_000);
+    suite.assert_pending_rewards(ADDR0, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR1, 1, 6_250_000);
+    suite.assert_pending_rewards(ADDR2, 1, 6_250_000);
 
     // double the rewards rate
     // now there will be 10_000_000 tokens distributed over 100_000 seconds
@@ -309,16 +309,16 @@ fn test_native_dao_rewards_reward_rate_switch_unit() {
     // skip 1/10th of the time
     suite.skip_seconds(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 7_500_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 8_750_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 8_750_000);
+    suite.assert_pending_rewards(ADDR0, 1, 7_500_000);
+    suite.assert_pending_rewards(ADDR1, 1, 8_750_000);
+    suite.assert_pending_rewards(ADDR2, 1, 8_750_000);
 
     // skip 2/10ths of the time
     suite.skip_seconds(200_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 17_500_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 13_750_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 13_750_000);
+    suite.assert_pending_rewards(ADDR0, 1, 17_500_000);
+    suite.assert_pending_rewards(ADDR1, 1, 13_750_000);
+    suite.assert_pending_rewards(ADDR2, 1, 13_750_000);
 
     // pause the rewards distribution
     suite.pause_emission(1);
@@ -327,73 +327,73 @@ fn test_native_dao_rewards_reward_rate_switch_unit() {
     suite.skip_blocks(100_000);
 
     // assert no pending rewards changed
-    suite.assert_pending_rewards(MEMBER1, 1, 17_500_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 13_750_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 13_750_000);
+    suite.assert_pending_rewards(ADDR0, 1, 17_500_000);
+    suite.assert_pending_rewards(ADDR1, 1, 13_750_000);
+    suite.assert_pending_rewards(ADDR2, 1, 13_750_000);
 
-    // assert MEMBER1 pre-claim balance
-    suite.assert_native_balance(MEMBER1, GOV_DENOM, 10_000_000);
-    // MEMBER1 claims their rewards
-    suite.claim_rewards(MEMBER1, 1);
-    // assert MEMBER1 post-claim balance to be pre-claim + pending
-    suite.assert_native_balance(MEMBER1, GOV_DENOM, 10_000_000 + 17_500_000);
-    // assert MEMBER1 is now entitled to 0 pending rewards
-    suite.assert_pending_rewards(MEMBER1, 1, 0);
+    // assert ADDR0 pre-claim balance
+    suite.assert_native_balance(ADDR0, GOV_DENOM, 10_000_000);
+    // ADDR0 claims their rewards
+    suite.claim_rewards(ADDR0, 1);
+    // assert ADDR0 post-claim balance to be pre-claim + pending
+    suite.assert_native_balance(ADDR0, GOV_DENOM, 10_000_000 + 17_500_000);
+    // assert ADDR0 is now entitled to 0 pending rewards
+    suite.assert_pending_rewards(ADDR0, 1, 0);
 
     // user 2 unstakes their stake
-    suite.unstake_native_tokens(MEMBER2, 50);
+    suite.unstake_native_tokens(ADDR1, 50);
 
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    // only the MEMBER1 pending rewards should have changed
-    suite.assert_pending_rewards(MEMBER1, 1, 0);
-    suite.assert_pending_rewards(MEMBER2, 1, 13_750_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 13_750_000);
+    // only the ADDR0 pending rewards should have changed
+    suite.assert_pending_rewards(ADDR0, 1, 0);
+    suite.assert_pending_rewards(ADDR1, 1, 13_750_000);
+    suite.assert_pending_rewards(ADDR2, 1, 13_750_000);
 
-    // MEMBER2 claims their rewards (has 50 to begin with as they unstaked)
-    suite.assert_native_balance(MEMBER2, GOV_DENOM, 50);
-    suite.claim_rewards(MEMBER2, 1);
-    // assert MEMBER2 post-claim balance to be pre-claim + pending and has 0 pending rewards
-    suite.assert_native_balance(MEMBER2, GOV_DENOM, 13_750_000 + 50);
-    suite.assert_pending_rewards(MEMBER2, 1, 0);
+    // ADDR1 claims their rewards (has 50 to begin with as they unstaked)
+    suite.assert_native_balance(ADDR1, GOV_DENOM, 50);
+    suite.claim_rewards(ADDR1, 1);
+    // assert ADDR1 post-claim balance to be pre-claim + pending and has 0 pending rewards
+    suite.assert_native_balance(ADDR1, GOV_DENOM, 13_750_000 + 50);
+    suite.assert_pending_rewards(ADDR1, 1, 0);
 
     // update the reward rate back to 1_000 / 10blocks
     // this should now distribute 10_000_000 tokens over 100_000 blocks
-    // between MEMBER1 (2/3rds) and MEMBER3 (1/3rd)
+    // between ADDR0 (2/3rds) and ADDR2 (1/3rd)
     suite.update_emission_rate(1, Duration::Height(10), 1000, true);
 
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
     // assert that rewards are being distributed at the expected rate
-    suite.assert_pending_rewards(MEMBER1, 1, 6_666_666);
-    suite.assert_pending_rewards(MEMBER2, 1, 0);
-    suite.assert_pending_rewards(MEMBER3, 1, 13_750_000 + 3_333_333);
+    suite.assert_pending_rewards(ADDR0, 1, 6_666_666);
+    suite.assert_pending_rewards(ADDR1, 1, 0);
+    suite.assert_pending_rewards(ADDR2, 1, 13_750_000 + 3_333_333);
 
-    // MEMBER3 claims their rewards
-    suite.assert_native_balance(MEMBER3, GOV_DENOM, 0);
-    suite.claim_rewards(MEMBER3, 1);
-    suite.assert_pending_rewards(MEMBER3, 1, 0);
-    suite.assert_native_balance(MEMBER3, GOV_DENOM, 13_750_000 + 3_333_333);
+    // ADDR2 claims their rewards
+    suite.assert_native_balance(ADDR2, GOV_DENOM, 0);
+    suite.claim_rewards(ADDR2, 1);
+    suite.assert_pending_rewards(ADDR2, 1, 0);
+    suite.assert_native_balance(ADDR2, GOV_DENOM, 13_750_000 + 3_333_333);
 
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 6_666_666 + 6_666_666 + 1);
-    suite.assert_pending_rewards(MEMBER2, 1, 0);
-    suite.assert_pending_rewards(MEMBER3, 1, 3_333_333);
+    suite.assert_pending_rewards(ADDR0, 1, 6_666_666 + 6_666_666 + 1);
+    suite.assert_pending_rewards(ADDR1, 1, 0);
+    suite.assert_pending_rewards(ADDR2, 1, 3_333_333);
 
     // claim everything so that there are 0 pending rewards
-    suite.claim_rewards(MEMBER3, 1);
-    suite.claim_rewards(MEMBER1, 1);
+    suite.claim_rewards(ADDR2, 1);
+    suite.claim_rewards(ADDR0, 1);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 0);
-    suite.assert_pending_rewards(MEMBER2, 1, 0);
-    suite.assert_pending_rewards(MEMBER3, 1, 0);
+    suite.assert_pending_rewards(ADDR0, 1, 0);
+    suite.assert_pending_rewards(ADDR1, 1, 0);
+    suite.assert_pending_rewards(ADDR2, 1, 0);
 
     // update the rewards rate to 40_000_000 per 100_000 seconds.
-    // split is still 2/3rds to MEMBER1 and 1/3rd to MEMBER3
+    // split is still 2/3rds to ADDR0 and 1/3rd to ADDR2
     suite.update_emission_rate(1, Duration::Time(10), 4000, true);
     suite.assert_ends_at(Expiration::AtTime(Timestamp::from_seconds(462_500)));
 
@@ -401,31 +401,31 @@ fn test_native_dao_rewards_reward_rate_switch_unit() {
 
     let addr1_pending = 20_000_000 * 2 / 3;
     let addr3_pending = 20_000_000 / 3;
-    suite.assert_pending_rewards(MEMBER1, 1, addr1_pending);
-    suite.assert_pending_rewards(MEMBER2, 1, 0);
-    suite.assert_pending_rewards(MEMBER3, 1, addr3_pending);
+    suite.assert_pending_rewards(ADDR0, 1, addr1_pending);
+    suite.assert_pending_rewards(ADDR1, 1, 0);
+    suite.assert_pending_rewards(ADDR2, 1, addr3_pending);
 
-    // MEMBER2 wakes up to the increased staking rate and stakes 50 tokens
-    // this brings new split to: [MEMBER1: 50%, MEMBER2: 25%, MEMBER3: 25%]
-    suite.stake_native_tokens(MEMBER2, 50);
+    // ADDR1 wakes up to the increased staking rate and stakes 50 tokens
+    // this brings new split to: [ADDR0: 50%, ADDR1: 25%, ADDR2: 25%]
+    suite.stake_native_tokens(ADDR1, 50);
 
     suite.skip_seconds(10_000); // allocates 4_000_000 tokens
 
-    suite.assert_pending_rewards(MEMBER1, 1, addr1_pending + 4_000_000 * 2 / 4);
-    suite.assert_pending_rewards(MEMBER2, 1, 4_000_000 / 4);
-    suite.assert_pending_rewards(MEMBER3, 1, addr3_pending + 4_000_000 / 4);
+    suite.assert_pending_rewards(ADDR0, 1, addr1_pending + 4_000_000 * 2 / 4);
+    suite.assert_pending_rewards(ADDR1, 1, 4_000_000 / 4);
+    suite.assert_pending_rewards(ADDR2, 1, addr3_pending + 4_000_000 / 4);
 
-    suite.claim_rewards(MEMBER1, 1);
-    suite.claim_rewards(MEMBER3, 1);
+    suite.claim_rewards(ADDR0, 1);
+    suite.claim_rewards(ADDR2, 1);
     let addr1_pending = 0;
     let addr3_pending = 0;
     suite.skip_seconds(10_000); // skips from 460,000 to 470,000, and the end is 462,500, so this allocates only 1_000_000 tokens instead of 4_000_000
 
-    suite.assert_pending_rewards(MEMBER1, 1, addr1_pending + 1_000_000 * 2 / 4);
-    suite.assert_pending_rewards(MEMBER2, 1, 4_000_000 / 4 + 1_000_000 / 4);
-    suite.assert_pending_rewards(MEMBER3, 1, addr3_pending + 1_000_000 / 4);
+    suite.assert_pending_rewards(ADDR0, 1, addr1_pending + 1_000_000 * 2 / 4);
+    suite.assert_pending_rewards(ADDR1, 1, 4_000_000 / 4 + 1_000_000 / 4);
+    suite.assert_pending_rewards(ADDR2, 1, addr3_pending + 1_000_000 / 4);
 
-    suite.claim_rewards(MEMBER2, 1);
+    suite.claim_rewards(ADDR1, 1);
 
     // TODO: there's a few denoms remaining here, ensure such cases are handled properly
     let remaining_rewards =
@@ -444,80 +444,80 @@ fn test_cw20_dao_native_rewards_block_height_based() {
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
 
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 10_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR0, 1, 10_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR2, 1, 5_000_000);
 
-    // MEMBER1 claims rewards
-    suite.claim_rewards(MEMBER1, 1);
-    suite.assert_native_balance(MEMBER1, GOV_DENOM, 10_000_000);
-    suite.assert_pending_rewards(MEMBER1, 1, 0);
+    // ADDR0 claims rewards
+    suite.claim_rewards(ADDR0, 1);
+    suite.assert_native_balance(ADDR0, GOV_DENOM, 10_000_000);
+    suite.assert_pending_rewards(ADDR0, 1, 0);
 
-    // MEMBER2 and MEMBER3 unstake their rewards
-    suite.unstake_cw20_tokens(50, MEMBER2);
-    suite.unstake_cw20_tokens(50, MEMBER3);
+    // ADDR1 and ADDR2 unstake their rewards
+    suite.unstake_cw20_tokens(50, ADDR1);
+    suite.unstake_cw20_tokens(50, ADDR2);
 
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    // because MEMBER2 and MEMBER3 are not staking, MEMBER1 receives all the rewards.
-    // MEMBER2 and MEMBER3 should have the same amount of pending rewards as before.
-    suite.assert_pending_rewards(MEMBER1, 1, 10_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 5_000_000);
+    // because ADDR1 and ADDR2 are not staking, ADDR0 receives all the rewards.
+    // ADDR1 and ADDR2 should have the same amount of pending rewards as before.
+    suite.assert_pending_rewards(ADDR0, 1, 10_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR2, 1, 5_000_000);
 
-    // MEMBER2 and MEMBER3 wake up, claim and restake their rewards
-    suite.claim_rewards(MEMBER2, 1);
-    suite.claim_rewards(MEMBER3, 1);
+    // ADDR1 and ADDR2 wake up, claim and restake their rewards
+    suite.claim_rewards(ADDR1, 1);
+    suite.claim_rewards(ADDR2, 1);
 
-    suite.stake_cw20_tokens(50, MEMBER2);
+    suite.stake_cw20_tokens(50, ADDR1);
 
     // skip 3/10th of the time
     suite.skip_blocks(300_000);
 
-    suite.stake_cw20_tokens(50, MEMBER3);
+    suite.stake_cw20_tokens(50, ADDR2);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 30_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 10_000_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 0);
+    suite.assert_pending_rewards(ADDR0, 1, 30_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 10_000_000);
+    suite.assert_pending_rewards(ADDR2, 1, 0);
 
-    suite.claim_rewards(MEMBER1, 1);
-    suite.claim_rewards(MEMBER2, 1);
+    suite.claim_rewards(ADDR0, 1);
+    suite.claim_rewards(ADDR1, 1);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 0);
-    suite.assert_pending_rewards(MEMBER2, 1, 0);
-    suite.assert_pending_rewards(MEMBER3, 1, 0);
+    suite.assert_pending_rewards(ADDR0, 1, 0);
+    suite.assert_pending_rewards(ADDR1, 1, 0);
+    suite.assert_pending_rewards(ADDR2, 1, 0);
 
     let remaining_time = suite.get_time_until_rewards_expiration();
 
     suite.skip_blocks(remaining_time - 100_000);
 
-    suite.claim_rewards(MEMBER1, 1);
-    suite.unstake_cw20_tokens(100, MEMBER1);
-    suite.assert_pending_rewards(MEMBER1, 1, 0);
+    suite.claim_rewards(ADDR0, 1);
+    suite.unstake_cw20_tokens(100, ADDR0);
+    suite.assert_pending_rewards(ADDR0, 1, 0);
 
     suite.skip_blocks(100_000);
 
-    suite.unstake_cw20_tokens(50, MEMBER2);
+    suite.unstake_cw20_tokens(50, ADDR1);
     suite.skip_blocks(100_000);
 
-    suite.claim_rewards(MEMBER2, 1);
-    suite.claim_rewards(MEMBER3, 1);
+    suite.claim_rewards(ADDR1, 1);
+    suite.claim_rewards(ADDR2, 1);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 0);
-    suite.assert_pending_rewards(MEMBER2, 1, 0);
-    suite.assert_pending_rewards(MEMBER3, 1, 0);
+    suite.assert_pending_rewards(ADDR0, 1, 0);
+    suite.assert_pending_rewards(ADDR1, 1, 0);
+    suite.assert_pending_rewards(ADDR2, 1, 0);
 
-    let addr1_bal = suite.get_balance_native(MEMBER1, GOV_DENOM);
-    let addr2_bal = suite.get_balance_native(MEMBER2, GOV_DENOM);
-    let addr3_bal = suite.get_balance_native(MEMBER3, GOV_DENOM);
+    let addr1_bal = suite.get_balance_native(ADDR0, GOV_DENOM);
+    let addr2_bal = suite.get_balance_native(ADDR1, GOV_DENOM);
+    let addr3_bal = suite.get_balance_native(ADDR2, GOV_DENOM);
 
     println!("Balances: {}, {}, {}", addr1_bal, addr2_bal, addr3_bal);
 }
@@ -533,41 +533,41 @@ fn test_cw721_dao_rewards() {
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
 
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 10_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR0, 1, 10_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR2, 1, 5_000_000);
 
-    // MEMBER1 claims rewards
-    suite.claim_rewards(MEMBER1, 1);
-    suite.assert_native_balance(MEMBER1, GOV_DENOM, 10_000_000);
-    suite.assert_pending_rewards(MEMBER1, 1, 0);
+    // ADDR0 claims rewards
+    suite.claim_rewards(ADDR0, 1);
+    suite.assert_native_balance(ADDR0, GOV_DENOM, 10_000_000);
+    suite.assert_pending_rewards(ADDR0, 1, 0);
 
-    // MEMBER2 and MEMBER3 unstake their nfts
-    suite.unstake_nft(MEMBER2, 3);
-    suite.unstake_nft(MEMBER3, 4);
+    // ADDR1 and ADDR2 unstake their nfts
+    suite.unstake_nft(ADDR1, 3);
+    suite.unstake_nft(ADDR2, 4);
 
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    // because MEMBER2 and MEMBER3 are not staking, MEMBER1 receives all the rewards.
-    // MEMBER2 and MEMBER3 should have the same amount of pending rewards as before.
-    suite.assert_pending_rewards(MEMBER1, 1, 10_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 5_000_000);
+    // because ADDR1 and ADDR2 are not staking, ADDR0 receives all the rewards.
+    // ADDR1 and ADDR2 should have the same amount of pending rewards as before.
+    suite.assert_pending_rewards(ADDR0, 1, 10_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR2, 1, 5_000_000);
 
-    // MEMBER2 and MEMBER3 wake up, claim and restake their nfts
-    suite.claim_rewards(MEMBER2, 1);
-    suite.claim_rewards(MEMBER3, 1);
+    // ADDR1 and ADDR2 wake up, claim and restake their nfts
+    suite.claim_rewards(ADDR1, 1);
+    suite.claim_rewards(ADDR2, 1);
 
-    suite.stake_nft(MEMBER2, 3);
-    suite.stake_nft(MEMBER3, 4);
+    suite.stake_nft(ADDR1, 3);
+    suite.stake_nft(ADDR2, 4);
 }
 
 #[test]
@@ -578,13 +578,13 @@ fn test_claim_zero_rewards() {
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
 
-    // MEMBER1 claims rewards
-    suite.claim_rewards(MEMBER1, 1);
+    // ADDR0 claims rewards
+    suite.claim_rewards(ADDR0, 1);
 
-    // MEMBER1 attempts to claim again
-    suite.claim_rewards(MEMBER1, 1);
+    // ADDR0 attempts to claim again
+    suite.claim_rewards(ADDR0, 1);
 }
 
 #[test]
@@ -610,41 +610,41 @@ fn test_native_dao_cw20_rewards_time_based() {
     // skip 1/10th of the time
     suite.skip_seconds(100_000);
 
-    // suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
+    // suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
 
     // skip 1/10th of the time
     suite.skip_seconds(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 10_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR0, 1, 10_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR2, 1, 5_000_000);
 
-    // MEMBER1 claims rewards
-    suite.claim_rewards(MEMBER1, 1);
-    suite.assert_cw20_balance(cw20_denom, MEMBER1, 10_000_000);
-    suite.assert_pending_rewards(MEMBER1, 1, 0);
+    // ADDR0 claims rewards
+    suite.claim_rewards(ADDR0, 1);
+    suite.assert_cw20_balance(cw20_denom, ADDR0, 10_000_000);
+    suite.assert_pending_rewards(ADDR0, 1, 0);
 
-    // MEMBER2 and MEMBER3 unstake their stake
-    suite.unstake_cw20_tokens(50, MEMBER2);
-    suite.unstake_cw20_tokens(50, MEMBER3);
+    // ADDR1 and ADDR2 unstake their stake
+    suite.unstake_cw20_tokens(50, ADDR1);
+    suite.unstake_cw20_tokens(50, ADDR2);
 
     // skip 1/10th of the time
     suite.skip_seconds(100_000);
 
-    // because MEMBER2 and MEMBER3 are not staking, MEMBER1 receives all the rewards.
-    // MEMBER2 and MEMBER3 should have the same amount of pending rewards as before.
-    suite.assert_pending_rewards(MEMBER1, 1, 10_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 5_000_000);
+    // because ADDR1 and ADDR2 are not staking, ADDR0 receives all the rewards.
+    // ADDR1 and ADDR2 should have the same amount of pending rewards as before.
+    suite.assert_pending_rewards(ADDR0, 1, 10_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR2, 1, 5_000_000);
 
-    // MEMBER2 and MEMBER3 wake up and claim their rewards
-    suite.claim_rewards(MEMBER2, 1);
-    suite.claim_rewards(MEMBER3, 1);
+    // ADDR1 and ADDR2 wake up and claim their rewards
+    suite.claim_rewards(ADDR1, 1);
+    suite.claim_rewards(ADDR2, 1);
 
-    suite.assert_cw20_balance(cw20_denom, MEMBER1, 10_000_000);
-    suite.assert_cw20_balance(cw20_denom, MEMBER2, 5_000_000);
+    suite.assert_cw20_balance(cw20_denom, ADDR0, 10_000_000);
+    suite.assert_cw20_balance(cw20_denom, ADDR1, 5_000_000);
 }
 
 #[test]
@@ -668,44 +668,44 @@ fn test_native_dao_rewards_time_based() {
     // skip 1/10th of the time
     suite.skip_seconds(100_000);
 
-    // suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
+    // suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
 
     // skip 1/10th of the time
     suite.skip_seconds(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 10_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR0, 1, 10_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR2, 1, 5_000_000);
 
-    // MEMBER1 claims rewards
-    suite.claim_rewards(MEMBER1, 1);
-    suite.assert_native_balance(MEMBER1, GOV_DENOM, 10_000_000);
-    suite.assert_pending_rewards(MEMBER1, 1, 0);
+    // ADDR0 claims rewards
+    suite.claim_rewards(ADDR0, 1);
+    suite.assert_native_balance(ADDR0, GOV_DENOM, 10_000_000);
+    suite.assert_pending_rewards(ADDR0, 1, 0);
 
-    // MEMBER2 and MEMBER3 unstake their stake
-    suite.unstake_native_tokens(MEMBER2, 50);
-    suite.unstake_native_tokens(MEMBER3, 50);
+    // ADDR1 and ADDR2 unstake their stake
+    suite.unstake_native_tokens(ADDR1, 50);
+    suite.unstake_native_tokens(ADDR2, 50);
 
     // skip 1/10th of the time
     suite.skip_seconds(100_000);
 
-    // because MEMBER2 and MEMBER3 are not staking, MEMBER1 receives all the rewards.
-    // MEMBER2 and MEMBER3 should have the same amount of pending rewards as before.
-    suite.assert_pending_rewards(MEMBER1, 1, 10_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 5_000_000);
+    // because ADDR1 and ADDR2 are not staking, ADDR0 receives all the rewards.
+    // ADDR1 and ADDR2 should have the same amount of pending rewards as before.
+    suite.assert_pending_rewards(ADDR0, 1, 10_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR2, 1, 5_000_000);
 
-    // MEMBER2 and MEMBER3 wake up, claim and restake their rewards
-    suite.claim_rewards(MEMBER2, 1);
-    suite.claim_rewards(MEMBER3, 1);
+    // ADDR1 and ADDR2 wake up, claim and restake their rewards
+    suite.claim_rewards(ADDR1, 1);
+    suite.claim_rewards(ADDR2, 1);
 
-    let addr1_balance = suite.get_balance_native(MEMBER1, GOV_DENOM);
-    let addr2_balance = suite.get_balance_native(MEMBER2, GOV_DENOM);
+    let addr1_balance = suite.get_balance_native(ADDR0, GOV_DENOM);
+    let addr2_balance = suite.get_balance_native(ADDR1, GOV_DENOM);
 
-    suite.stake_native_tokens(MEMBER1, addr1_balance);
-    suite.stake_native_tokens(MEMBER2, addr2_balance);
+    suite.stake_native_tokens(ADDR0, addr1_balance);
+    suite.stake_native_tokens(ADDR1, addr2_balance);
 }
 
 // all of the `+1` corrections highlight rounding
@@ -723,15 +723,15 @@ fn test_native_dao_rewards_time_based_with_rounding() {
         })
         .with_cw4_members(vec![
             Member {
-                addr: MEMBER1.to_string(),
+                addr: ADDR0.to_string(),
                 weight: 140,
             },
             Member {
-                addr: MEMBER2.to_string(),
+                addr: ADDR1.to_string(),
                 weight: 40,
             },
             Member {
-                addr: MEMBER3.to_string(),
+                addr: ADDR2.to_string(),
                 weight: 20,
             },
         ])
@@ -744,94 +744,94 @@ fn test_native_dao_rewards_time_based_with_rounding() {
     // skip 1 interval
     suite.skip_seconds(100);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 70);
-    suite.assert_pending_rewards(MEMBER2, 1, 20);
-    suite.assert_pending_rewards(MEMBER3, 1, 10);
+    suite.assert_pending_rewards(ADDR0, 1, 70);
+    suite.assert_pending_rewards(ADDR1, 1, 20);
+    suite.assert_pending_rewards(ADDR2, 1, 10);
 
     // change voting power of one of the members and claim
     suite.update_members(
         vec![Member {
-            addr: MEMBER2.to_string(),
+            addr: ADDR1.to_string(),
             weight: 60,
         }],
         vec![],
     );
-    suite.claim_rewards(MEMBER2, 1);
-    suite.assert_native_balance(MEMBER2, GOV_DENOM, 20);
-    suite.assert_pending_rewards(MEMBER2, 1, 0);
+    suite.claim_rewards(ADDR1, 1);
+    suite.assert_native_balance(ADDR1, GOV_DENOM, 20);
+    suite.assert_pending_rewards(ADDR1, 1, 0);
 
     // skip 1 interval
     suite.skip_seconds(100);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 70 + 63);
-    suite.assert_pending_rewards(MEMBER2, 1, 27);
-    suite.assert_pending_rewards(MEMBER3, 1, 10 + 9);
+    suite.assert_pending_rewards(ADDR0, 1, 70 + 63);
+    suite.assert_pending_rewards(ADDR1, 1, 27);
+    suite.assert_pending_rewards(ADDR2, 1, 10 + 9);
 
     // increase reward rate and claim
     suite.update_emission_rate(1, Duration::Time(100), 150, true);
-    suite.claim_rewards(MEMBER3, 1);
-    suite.assert_native_balance(MEMBER3, GOV_DENOM, 10 + 9);
-    suite.assert_pending_rewards(MEMBER3, 1, 0);
+    suite.claim_rewards(ADDR2, 1);
+    suite.assert_native_balance(ADDR2, GOV_DENOM, 10 + 9);
+    suite.assert_pending_rewards(ADDR2, 1, 0);
 
     // skip 1 interval
     suite.skip_seconds(100);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 70 + 63 + 95 + 1);
-    suite.assert_pending_rewards(MEMBER2, 1, 27 + 40 + 1);
-    suite.assert_pending_rewards(MEMBER3, 1, 13);
+    suite.assert_pending_rewards(ADDR0, 1, 70 + 63 + 95 + 1);
+    suite.assert_pending_rewards(ADDR1, 1, 27 + 40 + 1);
+    suite.assert_pending_rewards(ADDR2, 1, 13);
 
     // claim rewards
-    suite.claim_rewards(MEMBER1, 1);
-    suite.assert_native_balance(MEMBER1, GOV_DENOM, 70 + 63 + 95 + 1);
-    suite.assert_pending_rewards(MEMBER1, 1, 0);
+    suite.claim_rewards(ADDR0, 1);
+    suite.assert_native_balance(ADDR0, GOV_DENOM, 70 + 63 + 95 + 1);
+    suite.assert_pending_rewards(ADDR0, 1, 0);
 
     // skip 3 intervals
     suite.skip_seconds(300);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 3 * 95 + 1);
-    suite.assert_pending_rewards(MEMBER2, 1, 27 + 4 * 40 + 1 + 1 + 1);
-    suite.assert_pending_rewards(MEMBER3, 1, 4 * 13 + 1 + 1);
+    suite.assert_pending_rewards(ADDR0, 1, 3 * 95 + 1);
+    suite.assert_pending_rewards(ADDR1, 1, 27 + 4 * 40 + 1 + 1 + 1);
+    suite.assert_pending_rewards(ADDR2, 1, 4 * 13 + 1 + 1);
 
     // change voting power for all
     suite.update_members(
         vec![
             Member {
-                addr: MEMBER1.to_string(),
+                addr: ADDR0.to_string(),
                 weight: 100,
             },
             Member {
-                addr: MEMBER2.to_string(),
+                addr: ADDR1.to_string(),
                 weight: 80,
             },
             Member {
-                addr: MEMBER3.to_string(),
+                addr: ADDR2.to_string(),
                 weight: 40,
             },
         ],
         vec![],
     );
 
-    suite.claim_rewards(MEMBER2, 1);
-    suite.assert_native_balance(MEMBER2, GOV_DENOM, 20 + 27 + 4 * 40 + 1 + 1 + 1);
-    suite.assert_pending_rewards(MEMBER2, 1, 0);
+    suite.claim_rewards(ADDR1, 1);
+    suite.assert_native_balance(ADDR1, GOV_DENOM, 20 + 27 + 4 * 40 + 1 + 1 + 1);
+    suite.assert_pending_rewards(ADDR1, 1, 0);
 
     // skip 1 interval
     suite.skip_seconds(100);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 3 * 95 + 1 + 68);
-    suite.assert_pending_rewards(MEMBER2, 1, 54);
-    suite.assert_pending_rewards(MEMBER3, 1, 4 * 13 + 1 + 1 + 27);
+    suite.assert_pending_rewards(ADDR0, 1, 3 * 95 + 1 + 68);
+    suite.assert_pending_rewards(ADDR1, 1, 54);
+    suite.assert_pending_rewards(ADDR2, 1, 4 * 13 + 1 + 1 + 27);
 
     // claim all
-    suite.claim_rewards(MEMBER1, 1);
-    suite.claim_rewards(MEMBER2, 1);
-    suite.claim_rewards(MEMBER3, 1);
-    suite.assert_native_balance(MEMBER1, GOV_DENOM, 70 + 63 + 95 + 1 + 3 * 95 + 1 + 68);
-    suite.assert_native_balance(MEMBER2, GOV_DENOM, 20 + 27 + 4 * 40 + 1 + 1 + 1 + 54);
-    suite.assert_native_balance(MEMBER3, GOV_DENOM, 10 + 9 + 4 * 13 + 1 + 1 + 27);
-    suite.assert_pending_rewards(MEMBER1, 1, 0);
-    suite.assert_pending_rewards(MEMBER2, 1, 0);
-    suite.assert_pending_rewards(MEMBER3, 1, 0);
+    suite.claim_rewards(ADDR0, 1);
+    suite.claim_rewards(ADDR1, 1);
+    suite.claim_rewards(ADDR2, 1);
+    suite.assert_native_balance(ADDR0, GOV_DENOM, 70 + 63 + 95 + 1 + 3 * 95 + 1 + 68);
+    suite.assert_native_balance(ADDR1, GOV_DENOM, 20 + 27 + 4 * 40 + 1 + 1 + 1 + 54);
+    suite.assert_native_balance(ADDR2, GOV_DENOM, 10 + 9 + 4 * 13 + 1 + 1 + 27);
+    suite.assert_pending_rewards(ADDR0, 1, 0);
+    suite.assert_pending_rewards(ADDR1, 1, 0);
+    suite.assert_pending_rewards(ADDR2, 1, 0);
 
     // TODO: fix this rug of 3 udenom by the distribution contract
     suite.assert_native_balance(
@@ -875,9 +875,9 @@ fn test_immediate_emission() {
         .unwrap();
 
     // users immediately have access to rewards
-    suite.assert_pending_rewards(MEMBER1, 2, 50_000_000);
-    suite.assert_pending_rewards(MEMBER2, 2, 25_000_000);
-    suite.assert_pending_rewards(MEMBER3, 2, 25_000_000);
+    suite.assert_pending_rewards(ADDR0, 2, 50_000_000);
+    suite.assert_pending_rewards(ADDR1, 2, 25_000_000);
+    suite.assert_pending_rewards(ADDR2, 2, 25_000_000);
 
     // ensure undistributed rewards are immediately 0
     suite.assert_undistributed_rewards(2, 0);
@@ -886,16 +886,16 @@ fn test_immediate_emission() {
     suite.fund_native(2, coin(100_000_000, ALT_DENOM));
 
     // users immediately have access to new rewards
-    suite.assert_pending_rewards(MEMBER1, 2, 2 * 50_000_000);
-    suite.assert_pending_rewards(MEMBER2, 2, 2 * 25_000_000);
-    suite.assert_pending_rewards(MEMBER3, 2, 2 * 25_000_000);
+    suite.assert_pending_rewards(ADDR0, 2, 2 * 50_000_000);
+    suite.assert_pending_rewards(ADDR1, 2, 2 * 25_000_000);
+    suite.assert_pending_rewards(ADDR2, 2, 2 * 25_000_000);
 
     // ensure undistributed rewards are immediately 0
     suite.assert_undistributed_rewards(2, 0);
 
     // a new user stakes tokens
-    suite.mint_native(coin(200, GOV_DENOM), MEMBER4);
-    suite.stake_native_tokens(MEMBER4, 200);
+    suite.mint_native(coin(200, GOV_DENOM), ADDR3);
+    suite.stake_native_tokens(ADDR3, 200);
 
     // skip 2 blocks so stake takes effect
     suite.skip_blocks(2);
@@ -903,22 +903,22 @@ fn test_immediate_emission() {
     // another fund takes into account new voting power
     suite.fund_native(2, coin(100_000_000, ALT_DENOM));
 
-    suite.assert_pending_rewards(MEMBER1, 2, 2 * 50_000_000 + 25_000_000);
-    suite.assert_pending_rewards(MEMBER2, 2, 2 * 25_000_000 + 12_500_000);
-    suite.assert_pending_rewards(MEMBER3, 2, 2 * 25_000_000 + 12_500_000);
-    suite.assert_pending_rewards(MEMBER4, 2, 50_000_000);
+    suite.assert_pending_rewards(ADDR0, 2, 2 * 50_000_000 + 25_000_000);
+    suite.assert_pending_rewards(ADDR1, 2, 2 * 25_000_000 + 12_500_000);
+    suite.assert_pending_rewards(ADDR2, 2, 2 * 25_000_000 + 12_500_000);
+    suite.assert_pending_rewards(ADDR3, 2, 50_000_000);
 
     // ensure undistributed rewards are immediately 0
     suite.assert_undistributed_rewards(2, 0);
 
-    suite.claim_rewards(MEMBER1, 2);
-    suite.claim_rewards(MEMBER2, 2);
-    suite.claim_rewards(MEMBER3, 2);
-    suite.claim_rewards(MEMBER4, 2);
+    suite.claim_rewards(ADDR0, 2);
+    suite.claim_rewards(ADDR1, 2);
+    suite.claim_rewards(ADDR2, 2);
+    suite.claim_rewards(ADDR3, 2);
 
-    suite.unstake_native_tokens(MEMBER1, 100);
-    suite.unstake_native_tokens(MEMBER2, 50);
-    suite.unstake_native_tokens(MEMBER3, 50);
+    suite.unstake_native_tokens(ADDR0, 100);
+    suite.unstake_native_tokens(ADDR1, 50);
+    suite.unstake_native_tokens(ADDR2, 50);
 
     // skip 2 blocks so stake takes effect
     suite.skip_blocks(2);
@@ -926,10 +926,10 @@ fn test_immediate_emission() {
     // another fund takes into account new voting power
     suite.fund_native(2, coin(100_000_000, ALT_DENOM));
 
-    suite.assert_pending_rewards(MEMBER1, 2, 0);
-    suite.assert_pending_rewards(MEMBER2, 2, 0);
-    suite.assert_pending_rewards(MEMBER3, 2, 0);
-    suite.assert_pending_rewards(MEMBER4, 2, 100_000_000);
+    suite.assert_pending_rewards(ADDR0, 2, 0);
+    suite.assert_pending_rewards(ADDR1, 2, 0);
+    suite.assert_pending_rewards(ADDR2, 2, 0);
+    suite.assert_pending_rewards(ADDR3, 2, 100_000_000);
 
     // ensure undistributed rewards are immediately 0
     suite.assert_undistributed_rewards(2, 0);
@@ -943,9 +943,9 @@ fn test_immediate_emission_fails_if_no_voting_power() {
     let mut suite = SuiteBuilder::base(super::suite::DaoType::Native).build();
 
     // all users unstake
-    suite.unstake_native_tokens(MEMBER1, 100);
-    suite.unstake_native_tokens(MEMBER2, 50);
-    suite.unstake_native_tokens(MEMBER3, 50);
+    suite.unstake_native_tokens(ADDR0, 100);
+    suite.unstake_native_tokens(ADDR1, 50);
+    suite.unstake_native_tokens(ADDR2, 50);
 
     // skip 2 blocks since the contract depends on the previous block's total
     // voting power, and voting power takes 1 block to take effect. so if voting
@@ -988,52 +988,52 @@ fn test_transition_to_immediate() {
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
 
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 10_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR0, 1, 10_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR2, 1, 5_000_000);
 
-    // MEMBER1 claims rewards
-    suite.claim_rewards(MEMBER1, 1);
-    suite.assert_native_balance(MEMBER1, GOV_DENOM, 10_000_000);
-    suite.assert_pending_rewards(MEMBER1, 1, 0);
+    // ADDR0 claims rewards
+    suite.claim_rewards(ADDR0, 1);
+    suite.assert_native_balance(ADDR0, GOV_DENOM, 10_000_000);
+    suite.assert_pending_rewards(ADDR0, 1, 0);
 
-    // MEMBER2 unstakes their stake
-    suite.unstake_native_tokens(MEMBER2, 50);
+    // ADDR1 unstakes their stake
+    suite.unstake_native_tokens(ADDR1, 50);
 
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    // because MEMBER2 is not staking, MEMBER1 and MEMBER3 receive the rewards. MEMBER2
+    // because ADDR1 is not staking, ADDR0 and ADDR2 receive the rewards. ADDR1
     // should have the same amount of pending rewards as before.
-    suite.assert_pending_rewards(MEMBER1, 1, 6_666_666);
-    suite.assert_pending_rewards(MEMBER2, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 5_000_000 + 3_333_333);
+    suite.assert_pending_rewards(ADDR0, 1, 6_666_666);
+    suite.assert_pending_rewards(ADDR1, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR2, 1, 5_000_000 + 3_333_333);
 
-    // MEMBER2 claims their rewards
-    suite.claim_rewards(MEMBER2, 1);
-    suite.assert_pending_rewards(MEMBER2, 1, 0);
+    // ADDR1 claims their rewards
+    suite.claim_rewards(ADDR1, 1);
+    suite.assert_pending_rewards(ADDR1, 1, 0);
 
     // switching to immediate emission instantly distributes the remaining 70M
     suite.set_immediate_emission(1);
 
-    // MEMBER1 and MEMBER3 split the rewards, and MEMBER2 gets none
-    suite.assert_pending_rewards(MEMBER1, 1, 6_666_666 + 46_666_666 + 1);
-    suite.assert_pending_rewards(MEMBER2, 1, 0);
-    suite.assert_pending_rewards(MEMBER3, 1, 5_000_000 + 3_333_333 + 23_333_333);
+    // ADDR0 and ADDR2 split the rewards, and ADDR1 gets none
+    suite.assert_pending_rewards(ADDR0, 1, 6_666_666 + 46_666_666 + 1);
+    suite.assert_pending_rewards(ADDR1, 1, 0);
+    suite.assert_pending_rewards(ADDR2, 1, 5_000_000 + 3_333_333 + 23_333_333);
 
     // claim all rewards
-    suite.claim_rewards(MEMBER1, 1);
-    suite.claim_rewards(MEMBER3, 1);
+    suite.claim_rewards(ADDR0, 1);
+    suite.claim_rewards(ADDR2, 1);
 
-    // MEMBER3 unstakes their stake, leaving only MEMBER1 staked
-    suite.unstake_native_tokens(MEMBER3, 50);
+    // ADDR2 unstakes their stake, leaving only ADDR0 staked
+    suite.unstake_native_tokens(ADDR2, 50);
 
     // skip 2 blocks so unstake takes effect
     suite.skip_blocks(2);
@@ -1042,8 +1042,8 @@ fn test_transition_to_immediate() {
     suite.mint_native(coin(100_000_000, GOV_DENOM), OWNER);
     suite.fund_native(1, coin(100_000_000, GOV_DENOM));
 
-    // MEMBER1 gets all
-    suite.assert_pending_rewards(MEMBER1, 1, 100_000_000);
+    // ADDR0 gets all
+    suite.assert_pending_rewards(ADDR0, 1, 100_000_000);
 
     // change back to linear emission
     suite.update_emission_rate(1, Duration::Height(10), 1000, true);
@@ -1052,14 +1052,14 @@ fn test_transition_to_immediate() {
     suite.mint_native(coin(100_000_000, GOV_DENOM), OWNER);
     suite.fund_native(1, coin(100_000_000, GOV_DENOM));
 
-    // MEMBER1 has same pending as before
-    suite.assert_pending_rewards(MEMBER1, 1, 100_000_000);
+    // ADDR0 has same pending as before
+    suite.assert_pending_rewards(ADDR0, 1, 100_000_000);
 
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    // MEMBER1 has new linearly distributed rewards
-    suite.assert_pending_rewards(MEMBER1, 1, 100_000_000 + 10_000_000);
+    // ADDR0 has new linearly distributed rewards
+    suite.assert_pending_rewards(ADDR0, 1, 100_000_000 + 10_000_000);
 }
 
 #[test]
@@ -1073,44 +1073,44 @@ fn test_native_dao_rewards() {
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
 
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 10_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR0, 1, 10_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR2, 1, 5_000_000);
 
-    // MEMBER1 claims rewards
-    suite.claim_rewards(MEMBER1, 1);
-    suite.assert_native_balance(MEMBER1, GOV_DENOM, 10_000_000);
-    suite.assert_pending_rewards(MEMBER1, 1, 0);
+    // ADDR0 claims rewards
+    suite.claim_rewards(ADDR0, 1);
+    suite.assert_native_balance(ADDR0, GOV_DENOM, 10_000_000);
+    suite.assert_pending_rewards(ADDR0, 1, 0);
 
-    // MEMBER2 and MEMBER3 unstake their stake
-    suite.unstake_native_tokens(MEMBER2, 50);
-    suite.unstake_native_tokens(MEMBER3, 50);
+    // ADDR1 and ADDR2 unstake their stake
+    suite.unstake_native_tokens(ADDR1, 50);
+    suite.unstake_native_tokens(ADDR2, 50);
 
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    // because MEMBER2 and MEMBER3 are not staking, MEMBER1 receives all the rewards.
-    // MEMBER2 and MEMBER3 should have the same amount of pending rewards as before.
-    suite.assert_pending_rewards(MEMBER1, 1, 10_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 5_000_000);
+    // because ADDR1 and ADDR2 are not staking, ADDR0 receives all the rewards.
+    // ADDR1 and ADDR2 should have the same amount of pending rewards as before.
+    suite.assert_pending_rewards(ADDR0, 1, 10_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR2, 1, 5_000_000);
 
-    // MEMBER2 and MEMBER3 wake up, claim and restake their rewards
-    suite.claim_rewards(MEMBER2, 1);
-    suite.claim_rewards(MEMBER3, 1);
+    // ADDR1 and ADDR2 wake up, claim and restake their rewards
+    suite.claim_rewards(ADDR1, 1);
+    suite.claim_rewards(ADDR2, 1);
 
-    let addr1_balance = suite.get_balance_native(MEMBER1, GOV_DENOM);
-    let addr2_balance = suite.get_balance_native(MEMBER2, GOV_DENOM);
+    let addr1_balance = suite.get_balance_native(ADDR0, GOV_DENOM);
+    let addr2_balance = suite.get_balance_native(ADDR1, GOV_DENOM);
 
-    suite.stake_native_tokens(MEMBER1, addr1_balance);
-    suite.stake_native_tokens(MEMBER2, addr2_balance);
+    suite.stake_native_tokens(ADDR0, addr1_balance);
+    suite.stake_native_tokens(ADDR1, addr2_balance);
 }
 
 #[test]
@@ -1124,27 +1124,27 @@ fn test_continuous_backfill_latest_voting_power() {
     // skip all of the time
     suite.skip_blocks(1_000_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 50_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 25_000_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 25_000_000);
+    suite.assert_pending_rewards(ADDR0, 1, 50_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 25_000_000);
+    suite.assert_pending_rewards(ADDR2, 1, 25_000_000);
 
-    suite.claim_rewards(MEMBER1, 1);
-    suite.claim_rewards(MEMBER2, 1);
-    suite.claim_rewards(MEMBER3, 1);
+    suite.claim_rewards(ADDR0, 1);
+    suite.claim_rewards(ADDR1, 1);
+    suite.claim_rewards(ADDR2, 1);
 
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
     // change voting powers (1 = 200, 2 = 50, 3 = 50)
-    suite.stake_native_tokens(MEMBER1, 100);
+    suite.stake_native_tokens(ADDR0, 100);
 
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
     // change voting powers again (1 = 50, 2 = 100, 3 = 100)
-    suite.unstake_native_tokens(MEMBER1, 150);
-    suite.stake_native_tokens(MEMBER2, 50);
-    suite.stake_native_tokens(MEMBER3, 50);
+    suite.unstake_native_tokens(ADDR0, 150);
+    suite.stake_native_tokens(ADDR1, 50);
+    suite.stake_native_tokens(ADDR2, 50);
 
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
@@ -1154,9 +1154,9 @@ fn test_continuous_backfill_latest_voting_power() {
 
     // since this is continuous, rewards should backfill based on the latest
     // voting powers. we skipped 30% of the time, so 30M should be distributed
-    suite.assert_pending_rewards(MEMBER1, 1, 6_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 12_000_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 12_000_000);
+    suite.assert_pending_rewards(ADDR0, 1, 6_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 12_000_000);
+    suite.assert_pending_rewards(ADDR2, 1, 12_000_000);
 }
 
 #[test]
@@ -1170,123 +1170,119 @@ fn test_cw4_dao_rewards() {
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
 
     // remove the second member
-    suite.update_members(vec![], vec![MEMBER2.to_string()]);
+    suite.update_members(vec![], vec![ADDR1.to_string()]);
     suite.query_members();
 
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    // now that MEMBER2 is no longer a member, MEMBER1 and MEMBER3 will split the rewards
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000 + 6_666_666);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 3_333_333 + 2_500_000);
+    // now that ADDR1 is no longer a member, ADDR0 and ADDR2 will split the rewards
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000 + 6_666_666);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 3_333_333 + 2_500_000);
 
     // reintroduce the 2nd member with double the vp
     let add_member_2 = Member {
-        addr: MEMBER2.to_string(),
+        addr: ADDR1.to_string(),
         weight: 2,
     };
     suite.update_members(vec![add_member_2], vec![]);
     suite.query_members();
 
-    // now the vp split is [MEMBER1: 40%, MEMBER2: 40%, MEMBER3: 20%]
+    // now the vp split is [ADDR0: 40%, ADDR1: 40%, ADDR2: 20%]
     // meaning the token reward per 100k blocks is 4mil, 4mil, 2mil
 
-    // MEMBER1 claims rewards
-    suite.claim_rewards(MEMBER1, 1);
-    suite.assert_native_balance(MEMBER1, GOV_DENOM, 5_000_000 + 6_666_666);
+    // ADDR0 claims rewards
+    suite.claim_rewards(ADDR0, 1);
+    suite.assert_native_balance(ADDR0, GOV_DENOM, 5_000_000 + 6_666_666);
 
-    // assert pending rewards are still the same (other than MEMBER1)
-    suite.assert_pending_rewards(MEMBER1, 1, 0);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 3_333_333 + 2_500_000);
+    // assert pending rewards are still the same (other than ADDR0)
+    suite.assert_pending_rewards(ADDR0, 1, 0);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 3_333_333 + 2_500_000);
 
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 4_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 6_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 7_833_333);
+    suite.assert_pending_rewards(ADDR0, 1, 4_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 6_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 7_833_333);
 
     // skip 1/2 of time, leaving 200k blocks left
     suite.skip_blocks(500_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 24_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 26_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 17_833_333);
+    suite.assert_pending_rewards(ADDR0, 1, 24_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 26_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 17_833_333);
 
     // remove all members
     suite.update_members(
         vec![],
-        vec![
-            MEMBER1.to_string(),
-            MEMBER2.to_string(),
-            MEMBER3.to_string(),
-        ],
+        vec![ADDR0.to_string(), ADDR1.to_string(), ADDR2.to_string()],
     );
 
-    suite.assert_pending_rewards(MEMBER1, 1, 24_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 26_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 17_833_333);
+    suite.assert_pending_rewards(ADDR0, 1, 24_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 26_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 17_833_333);
 
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 24_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 26_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 17_833_333);
+    suite.assert_pending_rewards(ADDR0, 1, 24_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 26_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 17_833_333);
 
     suite.update_members(
         vec![
             Member {
-                addr: MEMBER1.to_string(),
+                addr: ADDR0.to_string(),
                 weight: 2,
             },
             Member {
-                addr: MEMBER2.to_string(),
+                addr: ADDR1.to_string(),
                 weight: 2,
             },
             Member {
-                addr: MEMBER3.to_string(),
+                addr: ADDR2.to_string(),
                 weight: 1,
             },
         ],
         vec![],
     );
 
-    suite.assert_pending_rewards(MEMBER1, 1, 24_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 26_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 17_833_333);
+    suite.assert_pending_rewards(ADDR0, 1, 24_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 26_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 17_833_333);
 
-    suite.claim_rewards(MEMBER1, 1);
-    suite.assert_pending_rewards(MEMBER1, 1, 0);
-    suite.assert_native_balance(MEMBER1, GOV_DENOM, 35_666_666);
+    suite.claim_rewards(ADDR0, 1);
+    suite.assert_pending_rewards(ADDR0, 1, 0);
+    suite.assert_native_balance(ADDR0, GOV_DENOM, 35_666_666);
 
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 4_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 30_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 19_833_333);
+    suite.assert_pending_rewards(ADDR0, 1, 4_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 30_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 19_833_333);
 
     // at the very expiration block, claim rewards
-    suite.claim_rewards(MEMBER2, 1);
-    suite.assert_pending_rewards(MEMBER2, 1, 0);
-    suite.assert_native_balance(MEMBER2, GOV_DENOM, 30_500_000);
+    suite.claim_rewards(ADDR1, 1);
+    suite.assert_pending_rewards(ADDR1, 1, 0);
+    suite.assert_native_balance(ADDR1, GOV_DENOM, 30_500_000);
 
     suite.skip_blocks(100_000);
 
-    suite.claim_rewards(MEMBER1, 1);
-    suite.claim_rewards(MEMBER3, 1);
+    suite.claim_rewards(ADDR0, 1);
+    suite.claim_rewards(ADDR2, 1);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 0);
-    suite.assert_pending_rewards(MEMBER2, 1, 0);
-    suite.assert_pending_rewards(MEMBER3, 1, 0);
+    suite.assert_pending_rewards(ADDR0, 1, 0);
+    suite.assert_pending_rewards(ADDR1, 1, 0);
+    suite.assert_pending_rewards(ADDR2, 1, 0);
 
     let contract = suite.distribution_contract.clone();
 
@@ -1365,7 +1361,7 @@ fn test_fund_cw20_with_invalid_cw20_receive_msg() {
     let mut suite = SuiteBuilder::base(super::suite::DaoType::CW20).build();
 
     let unregistered_cw20_coin = Cw20Coin {
-        address: MEMBER1.to_string(),
+        address: ADDR0.to_string(),
         amount: Uint128::new(1_000_000),
     };
 
@@ -1376,7 +1372,7 @@ fn test_fund_cw20_with_invalid_cw20_receive_msg() {
         .base
         .app
         .execute_contract(
-            Addr::unchecked(MEMBER1),
+            Addr::unchecked(ADDR0),
             new_cw20_mint.clone(),
             &cw20::Cw20ExecuteMsg::Send {
                 contract: suite.distribution_contract.to_string(),
@@ -1395,7 +1391,7 @@ fn test_fund_invalid_cw20_denom() {
     let mut suite = SuiteBuilder::base(super::suite::DaoType::CW20).build();
 
     let unregistered_cw20_coin = Cw20Coin {
-        address: MEMBER1.to_string(),
+        address: ADDR0.to_string(),
         amount: Uint128::new(1_000_000),
     };
 
@@ -1423,16 +1419,16 @@ fn test_withdraw_alternative_destination_address() {
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
 
     // user 1 and 2 claim their rewards
-    suite.claim_rewards(MEMBER1, 1);
-    suite.claim_rewards(MEMBER2, 1);
+    suite.claim_rewards(ADDR0, 1);
+    suite.claim_rewards(ADDR1, 1);
 
     // user 2 unstakes
-    suite.unstake_native_tokens(MEMBER2, 50);
+    suite.unstake_native_tokens(ADDR1, 50);
 
     suite.skip_blocks(100_000);
 
@@ -1463,16 +1459,16 @@ fn test_withdraw_block_based() {
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    // suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    // suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    // suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
+    // suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    // suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    // suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
 
     // user 1 and 2 claim their rewards
-    suite.claim_rewards(MEMBER1, 1);
-    suite.claim_rewards(MEMBER2, 1);
+    suite.claim_rewards(ADDR0, 1);
+    suite.claim_rewards(ADDR1, 1);
 
     // user 2 unstakes
-    suite.unstake_native_tokens(MEMBER2, 50);
+    suite.unstake_native_tokens(ADDR1, 50);
 
     suite.skip_blocks(100_000);
 
@@ -1508,22 +1504,22 @@ fn test_withdraw_block_based() {
     );
 
     // we assert that pending rewards did not change
-    suite.assert_pending_rewards(MEMBER1, 1, 6_666_666);
-    suite.assert_pending_rewards(MEMBER2, 1, 0);
-    suite.assert_pending_rewards(MEMBER3, 1, 3_333_333 + 2_500_000);
+    suite.assert_pending_rewards(ADDR0, 1, 6_666_666);
+    suite.assert_pending_rewards(ADDR1, 1, 0);
+    suite.assert_pending_rewards(ADDR2, 1, 3_333_333 + 2_500_000);
 
     // user 1 can claim their rewards
-    suite.claim_rewards(MEMBER1, 1);
-    // suite.assert_pending_rewards(MEMBER1, 1, 0);
-    suite.assert_native_balance(MEMBER1, GOV_DENOM, 11_666_666);
+    suite.claim_rewards(ADDR0, 1);
+    // suite.assert_pending_rewards(ADDR0, 1, 0);
+    suite.assert_native_balance(ADDR0, GOV_DENOM, 11_666_666);
 
     // user 3 can unstake and claim their rewards
-    suite.unstake_native_tokens(MEMBER3, 50);
+    suite.unstake_native_tokens(ADDR2, 50);
     suite.skip_blocks(100_000);
-    suite.assert_native_balance(MEMBER3, GOV_DENOM, 50);
-    suite.claim_rewards(MEMBER3, 1);
-    // suite.assert_pending_rewards(MEMBER3, 1, 0);
-    suite.assert_native_balance(MEMBER3, GOV_DENOM, 3_333_333 + 2_500_000 + 50);
+    suite.assert_native_balance(ADDR2, GOV_DENOM, 50);
+    suite.claim_rewards(ADDR2, 1);
+    // suite.assert_pending_rewards(ADDR2, 1, 0);
+    suite.assert_native_balance(ADDR2, GOV_DENOM, 3_333_333 + 2_500_000 + 50);
 
     // TODO: fix this rug of 1 udenom by the distribution contract
     suite.assert_native_balance(&distribution_contract, GOV_DENOM, 1);
@@ -1544,16 +1540,16 @@ fn test_withdraw_time_based() {
     // skip 1/10th of the time
     suite.skip_seconds(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
 
     // user 1 and 2 claim their rewards
-    suite.claim_rewards(MEMBER1, 1);
-    suite.claim_rewards(MEMBER2, 1);
+    suite.claim_rewards(ADDR0, 1);
+    suite.claim_rewards(ADDR1, 1);
 
     // user 2 unstakes
-    suite.unstake_native_tokens(MEMBER2, 50);
+    suite.unstake_native_tokens(ADDR1, 50);
 
     suite.skip_seconds(100_000);
 
@@ -1589,22 +1585,22 @@ fn test_withdraw_time_based() {
     );
 
     // we assert that pending rewards did not change
-    suite.assert_pending_rewards(MEMBER1, 1, 6_666_666);
-    suite.assert_pending_rewards(MEMBER2, 1, 0);
-    suite.assert_pending_rewards(MEMBER3, 1, 3_333_333 + 2_500_000);
+    suite.assert_pending_rewards(ADDR0, 1, 6_666_666);
+    suite.assert_pending_rewards(ADDR1, 1, 0);
+    suite.assert_pending_rewards(ADDR2, 1, 3_333_333 + 2_500_000);
 
     // user 1 can claim their rewards
-    suite.claim_rewards(MEMBER1, 1);
-    suite.assert_pending_rewards(MEMBER1, 1, 0);
-    suite.assert_native_balance(MEMBER1, GOV_DENOM, 11_666_666);
+    suite.claim_rewards(ADDR0, 1);
+    suite.assert_pending_rewards(ADDR0, 1, 0);
+    suite.assert_native_balance(ADDR0, GOV_DENOM, 11_666_666);
 
     // user 3 can unstake and claim their rewards
-    suite.unstake_native_tokens(MEMBER3, 50);
+    suite.unstake_native_tokens(ADDR2, 50);
     suite.skip_seconds(100_000);
-    suite.assert_native_balance(MEMBER3, GOV_DENOM, 50);
-    suite.claim_rewards(MEMBER3, 1);
-    suite.assert_pending_rewards(MEMBER3, 1, 0);
-    suite.assert_native_balance(MEMBER3, GOV_DENOM, 3_333_333 + 2_500_000 + 50);
+    suite.assert_native_balance(ADDR2, GOV_DENOM, 50);
+    suite.claim_rewards(ADDR2, 1);
+    suite.assert_pending_rewards(ADDR2, 1, 0);
+    suite.assert_native_balance(ADDR2, GOV_DENOM, 3_333_333 + 2_500_000 + 50);
 
     // TODO: fix this rug of 1 udenom by the distribution contract
     suite.assert_native_balance(&distribution_contract, GOV_DENOM, 1);
@@ -1625,14 +1621,14 @@ fn test_withdraw_and_restart_with_continuous() {
     // skip 1/10th of the time
     suite.skip_seconds(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
 
     // users claim their rewards
-    suite.claim_rewards(MEMBER1, 1);
-    suite.claim_rewards(MEMBER2, 1);
-    suite.claim_rewards(MEMBER3, 1);
+    suite.claim_rewards(ADDR0, 1);
+    suite.claim_rewards(ADDR1, 1);
+    suite.claim_rewards(ADDR2, 1);
 
     // skip 1/10th of the time
     suite.skip_seconds(100_000);
@@ -1670,12 +1666,12 @@ fn test_withdraw_and_restart_with_continuous() {
     );
 
     // we assert that pending rewards did not change
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
-    suite.claim_rewards(MEMBER1, 1);
-    suite.claim_rewards(MEMBER2, 1);
-    suite.claim_rewards(MEMBER3, 1);
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
+    suite.claim_rewards(ADDR0, 1);
+    suite.claim_rewards(ADDR1, 1);
+    suite.claim_rewards(ADDR2, 1);
 
     // fund again
     suite.fund_native(1, coin(100_000_000, GOV_DENOM));
@@ -1683,9 +1679,9 @@ fn test_withdraw_and_restart_with_continuous() {
     // check that pending rewards did not restart. since we skipped 1/10th the
     // time after the withdraw occurred, everyone should already have 10% of the
     // new amount pending.
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
 }
 
 #[test]
@@ -1703,14 +1699,14 @@ fn test_withdraw_and_restart_not_continuous() {
     // skip 1/10th of the time
     suite.skip_seconds(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
 
     // users claim their rewards
-    suite.claim_rewards(MEMBER1, 1);
-    suite.claim_rewards(MEMBER2, 1);
-    suite.claim_rewards(MEMBER3, 1);
+    suite.claim_rewards(ADDR0, 1);
+    suite.claim_rewards(ADDR1, 1);
+    suite.claim_rewards(ADDR2, 1);
 
     // skip 1/10th of the time
     suite.skip_seconds(100_000);
@@ -1748,12 +1744,12 @@ fn test_withdraw_and_restart_not_continuous() {
     );
 
     // we assert that pending rewards did not change
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
-    suite.claim_rewards(MEMBER1, 1);
-    suite.claim_rewards(MEMBER2, 1);
-    suite.claim_rewards(MEMBER3, 1);
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
+    suite.claim_rewards(ADDR0, 1);
+    suite.claim_rewards(ADDR1, 1);
+    suite.claim_rewards(ADDR2, 1);
 
     // fund again
     suite.fund_native(1, coin(100_000_000, GOV_DENOM));
@@ -1764,9 +1760,9 @@ fn test_withdraw_and_restart_not_continuous() {
     // check that pending rewards restarted from the funding date. since we
     // skipped 1/10th the time after the funding occurred, everyone should
     // have 10% of the new amount pending
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
 }
 
 #[test]
@@ -1781,7 +1777,7 @@ fn test_withdraw_unauthorized() {
         .base
         .app
         .execute_contract(
-            Addr::unchecked(MEMBER1),
+            Addr::unchecked(ADDR0),
             suite.distribution_contract.clone(),
             &ExecuteMsg::Withdraw { id: 1 },
             &[],
@@ -1806,7 +1802,7 @@ fn test_claim_404() {
 
     suite.skip_blocks(100_000);
 
-    suite.claim_rewards(MEMBER1, 3);
+    suite.claim_rewards(ADDR0, 3);
 }
 
 #[test]
@@ -1904,22 +1900,22 @@ fn test_fund_native_block_based_post_expiration_not_continuous() {
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
 
-    // MEMBER2 unstake their stake
-    suite.unstake_native_tokens(MEMBER2, 50);
+    // ADDR1 unstake their stake
+    suite.unstake_native_tokens(ADDR1, 50);
 
     // addr3 claims their rewards
-    suite.claim_rewards(MEMBER3, 1);
+    suite.claim_rewards(ADDR2, 1);
 
     // skip to 100_000 blocks past the expiration
     suite.skip_blocks(1_000_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 65_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 30_000_000);
+    suite.assert_pending_rewards(ADDR0, 1, 65_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 30_000_000);
 
     suite.assert_ends_at(expiration_date);
     suite.assert_started_at(started_at);
@@ -1966,23 +1962,23 @@ fn test_fund_cw20_time_based_post_expiration_not_continuous() {
     // skip 1/10th of the time
     suite.skip_seconds(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
 
-    // MEMBER2 unstake their stake
-    suite.unstake_cw20_tokens(50, MEMBER2);
+    // ADDR1 unstake their stake
+    suite.unstake_cw20_tokens(50, ADDR1);
 
     // addr3 claims their rewards
-    suite.claim_rewards(MEMBER3, 1);
-    suite.assert_cw20_balance(cw20_denom, MEMBER3, 2_500_000);
+    suite.claim_rewards(ADDR2, 1);
+    suite.assert_cw20_balance(cw20_denom, ADDR2, 2_500_000);
 
     // skip to 100_000 blocks past the expiration
     suite.skip_seconds(1_000_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 65_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 30_000_000);
+    suite.assert_pending_rewards(ADDR0, 1, 65_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 30_000_000);
 
     suite.assert_ends_at(expiration_date);
     suite.assert_started_at(started_at);
@@ -2034,22 +2030,22 @@ fn test_fund_cw20_time_based_pre_expiration() {
     // skip 1/10th of the time
     suite.skip_seconds(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
 
-    // MEMBER2 unstake their stake
-    suite.unstake_cw20_tokens(50, MEMBER2);
+    // ADDR1 unstake their stake
+    suite.unstake_cw20_tokens(50, ADDR1);
 
     // addr3 claims their rewards
-    suite.claim_rewards(MEMBER3, 1);
+    suite.claim_rewards(ADDR2, 1);
 
     // skip to 100_000 blocks before the expiration
     suite.skip_seconds(800_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 58_333_333);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 26_666_666);
+    suite.assert_pending_rewards(ADDR0, 1, 58_333_333);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 26_666_666);
 
     suite.assert_ends_at(expiration_date);
     suite.assert_started_at(started_at);
@@ -2090,22 +2086,22 @@ fn test_fund_native_height_based_pre_expiration() {
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
 
-    // MEMBER2 unstake their stake
-    suite.unstake_native_tokens(MEMBER2, 50);
+    // ADDR1 unstake their stake
+    suite.unstake_native_tokens(ADDR1, 50);
 
     // addr3 claims their rewards
-    suite.claim_rewards(MEMBER3, 1);
+    suite.claim_rewards(ADDR2, 1);
 
     // skip to 100_000 blocks before the expiration
     suite.skip_blocks(800_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 58_333_333);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 26_666_666);
+    suite.assert_pending_rewards(ADDR0, 1, 58_333_333);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 26_666_666);
 
     suite.assert_ends_at(expiration_date);
     suite.assert_started_at(started_at);
@@ -2130,7 +2126,7 @@ fn test_native_dao_rewards_entry_edge_case() {
     let mut suite = SuiteBuilder::base(super::suite::DaoType::Native).build();
 
     // we start with the following staking power split:
-    // [MEMBER1: 100, MEMBER2: 50, MEMBER3: 50], or [MEMBER1: 50%, MEMBER2: 25%, MEMBER3: 25%
+    // [ADDR0: 100, ADDR1: 50, ADDR2: 50], or [ADDR0: 50%, ADDR1: 25%, ADDR2: 25%
     suite.assert_amount(1_000);
     suite.assert_ends_at(Expiration::AtHeight(1_000_000));
     suite.assert_duration(10);
@@ -2138,63 +2134,63 @@ fn test_native_dao_rewards_entry_edge_case() {
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
-    // MEMBER1 stakes additional 100 tokens, bringing the new staking power split to
-    // [MEMBER1: 200, MEMBER2: 50, MEMBER3: 50], or [MEMBER1: 66.6%, MEMBER2: 16.6%, MEMBER3: 16.6%]
-    // this means that per 100_000 blocks, MEMBER1 should receive 6_666_666, while
-    // MEMBER2 and MEMBER3 should receive 1_666_666 each.
-    suite.mint_native(coin(100, GOV_DENOM), MEMBER1);
-    suite.stake_native_tokens(MEMBER1, 100);
+    // ADDR0 stakes additional 100 tokens, bringing the new staking power split to
+    // [ADDR0: 200, ADDR1: 50, ADDR2: 50], or [ADDR0: 66.6%, ADDR1: 16.6%, ADDR2: 16.6%]
+    // this means that per 100_000 blocks, ADDR0 should receive 6_666_666, while
+    // ADDR1 and ADDR2 should receive 1_666_666 each.
+    suite.mint_native(coin(100, GOV_DENOM), ADDR0);
+    suite.stake_native_tokens(ADDR0, 100);
 
     // rewards here should not be affected by the new stake,
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
 
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
     // here we should see the new stake affecting the rewards split.
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000 + 6_666_666);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000 + 1_666_666);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000 + 1_666_666);
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000 + 6_666_666);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000 + 1_666_666);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000 + 1_666_666);
 
-    // MEMBER1 claims rewards
-    suite.claim_rewards(MEMBER1, 1);
-    suite.assert_native_balance(MEMBER1, GOV_DENOM, 5_000_000 + 6_666_666);
-    suite.assert_pending_rewards(MEMBER1, 1, 0);
+    // ADDR0 claims rewards
+    suite.claim_rewards(ADDR0, 1);
+    suite.assert_native_balance(ADDR0, GOV_DENOM, 5_000_000 + 6_666_666);
+    suite.assert_pending_rewards(ADDR0, 1, 0);
 
-    // MEMBER2 and MEMBER3 unstake their stake
-    // new voting power split is [MEMBER1: 100%, MEMBER2: 0%, MEMBER3: 0%]
-    suite.unstake_native_tokens(MEMBER2, 50);
-    suite.unstake_native_tokens(MEMBER3, 50);
+    // ADDR1 and ADDR2 unstake their stake
+    // new voting power split is [ADDR0: 100%, ADDR1: 0%, ADDR2: 0%]
+    suite.unstake_native_tokens(ADDR1, 50);
+    suite.unstake_native_tokens(ADDR2, 50);
 
-    // we assert that by unstaking, MEMBER2 and MEMBER3 do not forfeit their earned but unclaimed rewards
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000 + 1_666_666);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000 + 1_666_666);
+    // we assert that by unstaking, ADDR1 and ADDR2 do not forfeit their earned but unclaimed rewards
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000 + 1_666_666);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000 + 1_666_666);
 
     // skip a block and assert that nothing changes
     suite.skip_blocks(1);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000 + 1_666_666);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000 + 1_666_666);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000 + 1_666_666);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000 + 1_666_666);
 
     // skip the remaining blocks to reach 1/10th of the time
     suite.skip_blocks(99_999);
 
-    // because MEMBER2 and MEMBER3 are not staking, MEMBER1 receives all the rewards.
-    // MEMBER2 and MEMBER3 should have the same amount of pending rewards as before.
-    suite.assert_pending_rewards(MEMBER1, 1, 10_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000 + 1_666_666);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000 + 1_666_666);
+    // because ADDR1 and ADDR2 are not staking, ADDR0 receives all the rewards.
+    // ADDR1 and ADDR2 should have the same amount of pending rewards as before.
+    suite.assert_pending_rewards(ADDR0, 1, 10_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000 + 1_666_666);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000 + 1_666_666);
 
-    // MEMBER2 and MEMBER3 wake up, claim and restake their rewards
-    suite.claim_rewards(MEMBER2, 1);
-    suite.claim_rewards(MEMBER3, 1);
+    // ADDR1 and ADDR2 wake up, claim and restake their rewards
+    suite.claim_rewards(ADDR1, 1);
+    suite.claim_rewards(ADDR2, 1);
 
-    let addr1_balance = suite.get_balance_native(MEMBER1, GOV_DENOM);
-    let addr2_balance = suite.get_balance_native(MEMBER2, GOV_DENOM);
+    let addr1_balance = suite.get_balance_native(ADDR0, GOV_DENOM);
+    let addr2_balance = suite.get_balance_native(ADDR1, GOV_DENOM);
 
-    suite.stake_native_tokens(MEMBER1, addr1_balance);
-    suite.stake_native_tokens(MEMBER2, addr2_balance);
+    suite.stake_native_tokens(ADDR0, addr1_balance);
+    suite.stake_native_tokens(ADDR1, addr2_balance);
 }
 
 #[test]
@@ -2236,9 +2232,9 @@ fn test_fund_native_on_create() {
 
     suite.skip_blocks(1_000_000); // skip 1/10th of the time
 
-    suite.assert_pending_rewards(MEMBER1, 2, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 2, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 2, 2_500_000);
+    suite.assert_pending_rewards(ADDR0, 2, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 2, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 2, 2_500_000);
 }
 
 #[test]
@@ -2483,17 +2479,17 @@ fn test_rewards_not_lost_after_discontinuous_restart() {
     suite.skip_blocks(33_333);
 
     // check pending rewards
-    suite.assert_pending_rewards(MEMBER1, 1, 49999500);
-    suite.assert_pending_rewards(MEMBER2, 1, 24999750);
-    suite.assert_pending_rewards(MEMBER3, 1, 24999750);
+    suite.assert_pending_rewards(ADDR0, 1, 49999500);
+    suite.assert_pending_rewards(ADDR1, 1, 24999750);
+    suite.assert_pending_rewards(ADDR2, 1, 24999750);
 
     // before user claim rewards, someone funded
     suite.fund_native(1, coin(1u128, GOV_DENOM));
 
     // pending rewards should still exist
-    suite.assert_pending_rewards(MEMBER1, 1, 49999500);
-    suite.assert_pending_rewards(MEMBER2, 1, 24999750);
-    suite.assert_pending_rewards(MEMBER3, 1, 24999750);
+    suite.assert_pending_rewards(ADDR0, 1, 49999500);
+    suite.assert_pending_rewards(ADDR1, 1, 24999750);
+    suite.assert_pending_rewards(ADDR2, 1, 24999750);
 }
 
 #[test]
@@ -2508,17 +2504,17 @@ fn test_fund_while_paused() {
     suite.skip_blocks(100_000);
 
     // check pending rewards
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
 
     // pause
     suite.pause_emission(1);
 
     // pending rewards should still exist
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
 
     // fund during pause the amount that's already been distributed
     suite.fund_native(1, coin(10_000_000, GOV_DENOM));
@@ -2533,9 +2529,9 @@ fn test_fund_while_paused() {
     suite.skip_blocks(100_000);
 
     // check pending rewards
-    suite.assert_pending_rewards(MEMBER1, 1, 2 * 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2 * 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2 * 2_500_000);
+    suite.assert_pending_rewards(ADDR0, 1, 2 * 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2 * 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2 * 2_500_000);
 
     // pause and fund more
     suite.pause_emission(1);
@@ -2561,9 +2557,9 @@ fn test_pause_expired() {
     suite.skip_blocks(100_000);
 
     // check pending rewards
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
 
     // check undistributed rewards
     suite.assert_undistributed_rewards(1, 90_000_000);
@@ -2578,9 +2574,9 @@ fn test_pause_expired() {
     suite.update_emission_rate(1, Duration::Height(10), 1_000, false);
 
     // check pending rewards are the same
-    suite.assert_pending_rewards(MEMBER1, 1, 5_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 2_500_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 2_500_000);
+    suite.assert_pending_rewards(ADDR2, 1, 2_500_000);
 
     // skip all and more, expiring
     suite.skip_blocks(1_100_000);
@@ -2589,9 +2585,9 @@ fn test_pause_expired() {
     suite.assert_undistributed_rewards(1, 0);
 
     // check pending rewards
-    suite.assert_pending_rewards(MEMBER1, 1, 50_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 25_000_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 25_000_000);
+    suite.assert_pending_rewards(ADDR0, 1, 50_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 25_000_000);
+    suite.assert_pending_rewards(ADDR2, 1, 25_000_000);
 
     // pause
     suite.pause_emission(1);
@@ -2600,9 +2596,9 @@ fn test_pause_expired() {
     suite.assert_undistributed_rewards(1, 0);
 
     // pending rewards should still exist
-    suite.assert_pending_rewards(MEMBER1, 1, 50_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 25_000_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 25_000_000);
+    suite.assert_pending_rewards(ADDR0, 1, 50_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 25_000_000);
+    suite.assert_pending_rewards(ADDR2, 1, 25_000_000);
 
     // fund
     suite.fund_native(1, coin(100_000_000, GOV_DENOM));
@@ -2620,9 +2616,9 @@ fn test_pause_expired() {
     suite.assert_undistributed_rewards(1, 0);
 
     // check pending rewards
-    suite.assert_pending_rewards(MEMBER1, 1, 100_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 50_000_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 50_000_000);
+    suite.assert_pending_rewards(ADDR0, 1, 100_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 50_000_000);
+    suite.assert_pending_rewards(ADDR2, 1, 50_000_000);
 }
 
 #[test]
@@ -2641,22 +2637,22 @@ fn test_large_stake_before_claim() {
     suite.assert_ends_at(Expiration::AtHeight(33_333));
     suite.assert_duration(1);
 
-    // MEMBER1 stake big amount of tokens
+    // ADDR0 stake big amount of tokens
     suite.skip_blocks(33_000);
-    suite.mint_native(coin(10_000, &suite.reward_denom), MEMBER1);
-    suite.stake_native_tokens(MEMBER1, 10_000);
+    suite.mint_native(coin(10_000, &suite.reward_denom), ADDR0);
+    suite.stake_native_tokens(ADDR0, 10_000);
 
     // ADD1 claims rewards in the next block
     suite.skip_blocks(1);
-    suite.claim_rewards(MEMBER1, 1);
+    suite.claim_rewards(ADDR0, 1);
 
     // skip to end
     suite.skip_blocks(100_000_000);
 
     // all users should be able to claim rewards
-    suite.claim_rewards(MEMBER1, 1);
-    suite.claim_rewards(MEMBER2, 1);
-    suite.claim_rewards(MEMBER3, 1);
+    suite.claim_rewards(ADDR0, 1);
+    suite.claim_rewards(ADDR1, 1);
+    suite.claim_rewards(ADDR2, 1);
 }
 
 #[test]
@@ -2678,22 +2674,22 @@ fn test_stake_during_interval() {
     // after half the duration, half the rewards (50) should be distributed.
     suite.skip_blocks(50);
 
-    // MEMBER1 has 50% voting power, so should receive 50% of the rewards.
-    suite.assert_pending_rewards(MEMBER1, 1, 25);
+    // ADDR0 has 50% voting power, so should receive 50% of the rewards.
+    suite.assert_pending_rewards(ADDR0, 1, 25);
 
-    // change voting power before the next distribution interval. MEMBER1 now
+    // change voting power before the next distribution interval. ADDR0 now
     // has 80% voting power, an increase from 50%.
-    suite.mint_native(coin(300, GOV_DENOM), MEMBER1);
-    suite.stake_native_tokens(MEMBER1, 300);
+    suite.mint_native(coin(300, GOV_DENOM), ADDR0);
+    suite.stake_native_tokens(ADDR0, 300);
 
     // after the rest of the initial duration, they should earn rewards at the
     // increased rate (50 more tokens, and they own 80% of them). 25 + 40 = 65
     suite.skip_blocks(50);
-    suite.assert_pending_rewards(MEMBER1, 1, 65);
+    suite.assert_pending_rewards(ADDR0, 1, 65);
 
     // after 50 more blocks from VP change, there are 40 more rewards.
     suite.skip_blocks(50);
-    suite.assert_pending_rewards(MEMBER1, 1, 105);
+    suite.assert_pending_rewards(ADDR0, 1, 105);
 }
 
 #[test]
@@ -2715,28 +2711,28 @@ fn test_stake_on_edges_of_interval() {
     // after half the duration, half the rewards (50) should be distributed.
     suite.skip_blocks(50);
 
-    // MEMBER1 has 50% voting power, so should receive 50% of the rewards.
-    suite.assert_pending_rewards(MEMBER1, 1, 25);
+    // ADDR0 has 50% voting power, so should receive 50% of the rewards.
+    suite.assert_pending_rewards(ADDR0, 1, 25);
 
     // after the full duration, all the rewards (50) should be distributed.
     suite.skip_blocks(50);
 
-    // MEMBER1 has 50% voting power, so should receive 50% of the rewards.
-    suite.assert_pending_rewards(MEMBER1, 1, 50);
+    // ADDR0 has 50% voting power, so should receive 50% of the rewards.
+    suite.assert_pending_rewards(ADDR0, 1, 50);
 
     // change voting power right at the end of the distribution interval.
-    // MEMBER1 now has 80% voting power, an increase from 50%.
-    suite.mint_native(coin(300, GOV_DENOM), MEMBER1);
-    suite.stake_native_tokens(MEMBER1, 300);
+    // ADDR0 now has 80% voting power, an increase from 50%.
+    suite.mint_native(coin(300, GOV_DENOM), ADDR0);
+    suite.stake_native_tokens(ADDR0, 300);
 
     // after another interval, they should earn rewards at the increased rate
     // (50 more tokens, and they own 80% of them). 50 + 40 = 90
     suite.skip_blocks(50);
-    suite.assert_pending_rewards(MEMBER1, 1, 90);
+    suite.assert_pending_rewards(ADDR0, 1, 90);
 
     // after 50 more blocks from VP change, there are 40 more rewards.
     suite.skip_blocks(50);
-    suite.assert_pending_rewards(MEMBER1, 1, 130);
+    suite.assert_pending_rewards(ADDR0, 1, 130);
 }
 
 #[test]
@@ -2753,9 +2749,9 @@ fn test_fund_latest_native() {
     // skip all of the time
     suite.skip_blocks(2_000_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 100_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 50_000_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 50_000_000);
+    suite.assert_pending_rewards(ADDR0, 1, 100_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 50_000_000);
+    suite.assert_pending_rewards(ADDR2, 1, 50_000_000);
 }
 
 #[test]
@@ -2783,9 +2779,9 @@ fn test_fund_latest_cw20() {
     // skip all of the time
     suite.skip_blocks(2_000_000);
 
-    suite.assert_pending_rewards(MEMBER1, 1, 100_000_000);
-    suite.assert_pending_rewards(MEMBER2, 1, 50_000_000);
-    suite.assert_pending_rewards(MEMBER3, 1, 50_000_000);
+    suite.assert_pending_rewards(ADDR0, 1, 100_000_000);
+    suite.assert_pending_rewards(ADDR1, 1, 50_000_000);
+    suite.assert_pending_rewards(ADDR2, 1, 50_000_000);
 }
 
 #[test]
@@ -2865,12 +2861,12 @@ fn test_closed_funding() {
     );
 
     // test fund from non-owner
-    suite.mint_native(coin(100, ALT_DENOM), MEMBER1);
+    suite.mint_native(coin(100, ALT_DENOM), ADDR0);
     let err: ContractError = suite
         .base
         .app
         .execute_contract(
-            Addr::unchecked(MEMBER1),
+            Addr::unchecked(ADDR0),
             suite.distribution_contract.clone(),
             &ExecuteMsg::Fund(FundMsg { id: 2 }),
             &[coin(100, ALT_DENOM)],
@@ -2888,7 +2884,7 @@ fn test_closed_funding() {
         .base
         .app
         .execute_contract(
-            Addr::unchecked(MEMBER1),
+            Addr::unchecked(ADDR0),
             suite.distribution_contract.clone(),
             &ExecuteMsg::Fund(FundMsg { id: 2 }),
             &[coin(100, ALT_DENOM)],
@@ -2936,9 +2932,9 @@ fn test_queries_before_funded() {
         .unwrap();
 
     // users have no rewards
-    suite.assert_pending_rewards(MEMBER1, 2, 0);
-    suite.assert_pending_rewards(MEMBER2, 2, 0);
-    suite.assert_pending_rewards(MEMBER3, 2, 0);
+    suite.assert_pending_rewards(ADDR0, 2, 0);
+    suite.assert_pending_rewards(ADDR1, 2, 0);
+    suite.assert_pending_rewards(ADDR2, 2, 0);
 
     // ensure undistributed rewards are immediately 0
     suite.assert_undistributed_rewards(2, 0);

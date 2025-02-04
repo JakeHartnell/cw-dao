@@ -1,3 +1,5 @@
+use std::ops::{Deref, DerefMut};
+
 use cosmwasm_std::{to_json_binary, Addr, Uint128};
 use cw20::Cw20Coin;
 use cw_utils::Duration;
@@ -21,6 +23,20 @@ pub struct Cw20DaoExtra {
 
 pub type Cw20TestDao = TestDao<Cw20DaoExtra>;
 
+impl Deref for DaoTestingSuiteCw20<'_> {
+    type Target = DaoTestingSuiteBase;
+
+    fn deref(&self) -> &Self::Target {
+        self.base
+    }
+}
+
+impl DerefMut for DaoTestingSuiteCw20<'_> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.base
+    }
+}
+
 impl<'a> DaoTestingSuiteCw20<'a> {
     pub fn new(base: &'a mut DaoTestingSuiteBase) -> Self {
         Self {
@@ -28,23 +44,23 @@ impl<'a> DaoTestingSuiteCw20<'a> {
 
             initial_balances: vec![
                 Cw20Coin {
-                    address: MEMBER1.to_string(),
+                    address: ADDR0.to_string(),
                     amount: Uint128::new(100),
                 },
                 Cw20Coin {
-                    address: MEMBER2.to_string(),
+                    address: ADDR1.to_string(),
                     amount: Uint128::new(200),
                 },
                 Cw20Coin {
-                    address: MEMBER3.to_string(),
+                    address: ADDR2.to_string(),
                     amount: Uint128::new(300),
                 },
                 Cw20Coin {
-                    address: MEMBER4.to_string(),
+                    address: ADDR3.to_string(),
                     amount: Uint128::new(300),
                 },
                 Cw20Coin {
-                    address: MEMBER5.to_string(),
+                    address: ADDR4.to_string(),
                     amount: Uint128::new(100),
                 },
             ],
@@ -87,19 +103,16 @@ impl<'a> DaoTestingSuiteCw20<'a> {
         staker: impl Into<String>,
         amount: impl Into<Uint128>,
     ) {
-        self.base
-            .app
-            .execute_contract(
-                Addr::unchecked(staker),
-                dao.x.cw20_addr.clone(),
-                &cw20::Cw20ExecuteMsg::Send {
-                    contract: dao.x.staking_addr.to_string(),
-                    amount: amount.into(),
-                    msg: to_json_binary(&cw20_stake::msg::ReceiveMsg::Stake {}).unwrap(),
-                },
-                &[],
-            )
-            .unwrap();
+        self.execute_smart_ok(
+            staker,
+            &dao.x.cw20_addr,
+            &cw20::Cw20ExecuteMsg::Send {
+                contract: dao.x.staking_addr.to_string(),
+                amount: amount.into(),
+                msg: to_json_binary(&cw20_stake::msg::ReceiveMsg::Stake {}).unwrap(),
+            },
+            &[],
+        );
     }
 
     /// unstake tokens
@@ -109,17 +122,14 @@ impl<'a> DaoTestingSuiteCw20<'a> {
         staker: impl Into<String>,
         amount: impl Into<Uint128>,
     ) {
-        self.base
-            .app
-            .execute_contract(
-                Addr::unchecked(staker),
-                dao.x.staking_addr.clone(),
-                &cw20_stake::msg::ExecuteMsg::Unstake {
-                    amount: amount.into(),
-                },
-                &[],
-            )
-            .unwrap();
+        self.execute_smart_ok(
+            staker,
+            &dao.x.staking_addr,
+            &cw20_stake::msg::ExecuteMsg::Unstake {
+                amount: amount.into(),
+            },
+            &[],
+        );
     }
 
     /// stake all initial balances and progress one block
@@ -129,32 +139,32 @@ impl<'a> DaoTestingSuiteCw20<'a> {
         }
 
         // staking takes effect at the next block
-        self.base.advance_block();
+        self.advance_block();
     }
 }
 
-impl<'a> DaoTestingSuite<Cw20DaoExtra> for DaoTestingSuiteCw20<'a> {
+impl DaoTestingSuite<Cw20DaoExtra> for DaoTestingSuiteCw20<'_> {
     fn base(&self) -> &DaoTestingSuiteBase {
-        self.base
+        self
     }
 
     fn base_mut(&mut self) -> &mut DaoTestingSuiteBase {
-        self.base
+        self
     }
 
     fn get_voting_module_info(&self) -> dao_interface::state::ModuleInstantiateInfo {
         dao_interface::state::ModuleInstantiateInfo {
-            code_id: self.base.voting_cw20_staked_id,
+            code_id: self.voting_cw20_staked_id,
             msg: to_json_binary(&dao_voting_cw20_staked::msg::InstantiateMsg {
                 token_info: dao_voting_cw20_staked::msg::TokenInfo::New {
-                    code_id: self.base.cw20_base_id,
+                    code_id: self.cw20_base_id,
                     label: "voting token".to_string(),
                     name: "Voting Token".to_string(),
                     symbol: "VOTE".to_string(),
                     decimals: 6,
                     initial_balances: self.initial_balances.clone(),
                     marketing: None,
-                    staking_code_id: self.base.cw20_stake_id,
+                    staking_code_id: self.cw20_stake_id,
                     unstaking_duration: self.unstaking_duration,
                     initial_dao_balance: Some(self.initial_dao_balance),
                 },
@@ -196,7 +206,7 @@ impl<'a> DaoTestingSuite<Cw20DaoExtra> for DaoTestingSuiteCw20<'a> {
         }
 
         // staking takes effect at the next block
-        self.base.advance_block();
+        self.advance_block();
     }
 }
 

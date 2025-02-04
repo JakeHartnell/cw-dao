@@ -98,6 +98,7 @@ pub fn create_dao(
                     },
                 },
                 veto: None,
+                delegation_module: None,
             })?,
             admin: Some(Admin::CoreModule {}),
             funds: vec![],

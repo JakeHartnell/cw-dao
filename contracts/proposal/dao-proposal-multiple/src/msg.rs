@@ -45,6 +45,9 @@ pub struct InstantiateMsg {
     /// During this period an oversight account (`veto.vetoer`) can
     /// veto the proposal.
     pub veto: Option<VetoConfig>,
+    /// The address of the delegation module to use for this proposal module (if
+    /// any).
+    pub delegation_module: Option<String>,
 }
 
 #[cw_serde]
@@ -131,6 +134,11 @@ pub enum ExecuteMsg {
     UpdatePreProposeInfo {
         info: PreProposeInfo,
     },
+    /// Update's the address of the delegation module associated with this
+    /// proposal module. Only the DAO may call this method.
+    UpdateDelegationModule {
+        module: String,
+    },
     AddProposalHook {
         address: String,
     },
@@ -184,6 +192,10 @@ pub enum QueryMsg {
     /// Gets the current proposal creation policy for this module.
     #[returns(::dao_voting::pre_propose::ProposalCreationPolicy)]
     ProposalCreationPolicy {},
+    /// Gets the address of the delegation module associated with this
+    /// proposal module (if any).
+    #[returns(Option<::cosmwasm_std::Addr>)]
+    DelegationModule {},
     /// Lists all of the consumers of proposal hooks for this module.
     #[returns(::cw_hooks::HooksResponse)]
     ProposalHooks {},

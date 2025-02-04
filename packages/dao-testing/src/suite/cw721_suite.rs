@@ -1,3 +1,5 @@
+use std::ops::{Deref, DerefMut};
+
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{to_json_binary, Addr, Binary, Empty};
 use cw_utils::Duration;
@@ -25,6 +27,20 @@ pub struct Cw721DaoExtra {
 
 pub type Cw721TestDao = TestDao<Cw721DaoExtra>;
 
+impl Deref for DaoTestingSuiteCw721<'_> {
+    type Target = DaoTestingSuiteBase;
+
+    fn deref(&self) -> &Self::Target {
+        self.base
+    }
+}
+
+impl DerefMut for DaoTestingSuiteCw721<'_> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.base
+    }
+}
+
 impl<'a> DaoTestingSuiteCw721<'a> {
     pub fn new(base: &'a mut DaoTestingSuiteBase) -> Self {
         Self {
@@ -32,24 +48,24 @@ impl<'a> DaoTestingSuiteCw721<'a> {
 
             initial_nfts: vec![
                 InitialNft {
+                    token_id: "0".to_string(),
+                    owner: ADDR0.to_string(),
+                },
+                InitialNft {
                     token_id: "1".to_string(),
-                    owner: MEMBER1.to_string(),
+                    owner: ADDR1.to_string(),
                 },
                 InitialNft {
                     token_id: "2".to_string(),
-                    owner: MEMBER2.to_string(),
+                    owner: ADDR2.to_string(),
                 },
                 InitialNft {
                     token_id: "3".to_string(),
-                    owner: MEMBER3.to_string(),
+                    owner: ADDR3.to_string(),
                 },
                 InitialNft {
                     token_id: "4".to_string(),
-                    owner: MEMBER4.to_string(),
-                },
-                InitialNft {
-                    token_id: "5".to_string(),
-                    owner: MEMBER5.to_string(),
+                    owner: ADDR4.to_string(),
                 },
             ],
             unstaking_duration: None,
@@ -82,19 +98,16 @@ impl<'a> DaoTestingSuiteCw721<'a> {
         staker: impl Into<String>,
         token_id: impl Into<String>,
     ) {
-        self.base
-            .app
-            .execute_contract(
-                Addr::unchecked(staker),
-                dao.x.cw721_addr.clone(),
-                &cw721_base::msg::ExecuteMsg::<Empty, Empty>::SendNft {
-                    contract: dao.voting_module_addr.to_string(),
-                    token_id: token_id.into(),
-                    msg: Binary::default(),
-                },
-                &[],
-            )
-            .unwrap();
+        self.execute_smart_ok(
+            staker,
+            &dao.x.cw721_addr,
+            &cw721_base::msg::ExecuteMsg::<Empty, Empty>::SendNft {
+                contract: dao.voting_module_addr.to_string(),
+                token_id: token_id.into(),
+                msg: Binary::default(),
+            },
+            &[],
+        );
     }
 
     /// unstake NFT
@@ -104,35 +117,32 @@ impl<'a> DaoTestingSuiteCw721<'a> {
         staker: impl Into<String>,
         token_id: impl Into<String>,
     ) {
-        self.base
-            .app
-            .execute_contract(
-                Addr::unchecked(staker),
-                dao.voting_module_addr.clone(),
-                &dao_voting_cw721_staked::msg::ExecuteMsg::Unstake {
-                    token_ids: vec![token_id.into()],
-                },
-                &[],
-            )
-            .unwrap();
+        self.execute_smart_ok(
+            staker,
+            &dao.voting_module_addr,
+            &dao_voting_cw721_staked::msg::ExecuteMsg::Unstake {
+                token_ids: vec![token_id.into()],
+            },
+            &[],
+        );
     }
 }
 
-impl<'a> DaoTestingSuite<Cw721DaoExtra> for DaoTestingSuiteCw721<'a> {
+impl DaoTestingSuite<Cw721DaoExtra> for DaoTestingSuiteCw721<'_> {
     fn base(&self) -> &DaoTestingSuiteBase {
-        self.base
+        self
     }
 
     fn base_mut(&mut self) -> &mut DaoTestingSuiteBase {
-        self.base
+        self
     }
 
     fn get_voting_module_info(&self) -> dao_interface::state::ModuleInstantiateInfo {
         dao_interface::state::ModuleInstantiateInfo {
-            code_id: self.base.voting_cw721_staked_id,
+            code_id: self.voting_cw721_staked_id,
             msg: to_json_binary(&dao_voting_cw721_staked::msg::InstantiateMsg {
                 nft_contract: dao_voting_cw721_staked::msg::NftContract::New {
-                    code_id: self.base.cw721_base_id,
+                    code_id: self.cw721_base_id,
                     label: "voting NFT".to_string(),
                     msg: to_json_binary(&cw721_base::msg::InstantiateMsg {
                         name: "Voting NFT".to_string(),
@@ -185,7 +195,7 @@ impl<'a> DaoTestingSuite<Cw721DaoExtra> for DaoTestingSuiteCw721<'a> {
         }
 
         // staking takes effect at the next block
-        self.base.advance_block();
+        self.advance_block();
     }
 }
 

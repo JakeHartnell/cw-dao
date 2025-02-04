@@ -91,6 +91,7 @@ fn test_set_self_admin_instantiate2() {
                 close_proposal_on_execution_failure: false,
                 pre_propose_info: PreProposeInfo::AnyoneMayPropose {},
                 veto: None,
+                delegation_module: None,
             })
             .unwrap(),
             admin: Some(Admin::CoreModule {}),

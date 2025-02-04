@@ -1,7 +1,15 @@
-use cosmwasm_std::{to_json_binary, Addr, Empty, QuerierWrapper, Timestamp};
+use std::{
+    fmt::{Debug, Display},
+    ops::{Deref, DerefMut},
+};
+
+use cosmwasm_std::{
+    to_json_binary, Addr, Coin, CosmosMsg, Empty, QuerierWrapper, Timestamp, Uint128,
+};
 use cw20::Cw20Coin;
-use cw_multi_test::{App, Executor};
+use cw_multi_test::{error::AnyResult, App, AppResponse, Contract, Executor};
 use cw_utils::Duration;
+use serde::Serialize;
 
 use super::*;
 use crate::contracts::*;
@@ -10,7 +18,9 @@ use crate::contracts::*;
 pub struct TestDao<Extra = Empty> {
     pub core_addr: Addr,
     pub voting_module_addr: Addr,
-    pub proposal_modules: Vec<dao_interface::state::ProposalModule>,
+    /// proposal modules in the form (pre-propose module, proposal module). if
+    /// the pre-propose module is None, then it does not exist.
+    pub proposal_modules: Vec<(Option<Addr>, Addr)>,
     pub x: Extra,
 }
 
@@ -44,7 +54,7 @@ pub struct DaoTestingSuiteBase {
     pub admin_factory_addr: Addr,
 }
 
-pub trait DaoTestingSuite<Extra = Empty> {
+pub trait DaoTestingSuite<Extra = Empty>: Deref + DerefMut {
     /// get the testing suite base
     fn base(&self) -> &DaoTestingSuiteBase;
 
@@ -97,6 +107,7 @@ pub trait DaoTestingSuite<Extra = Empty> {
                 },
                 close_proposal_on_execution_failure: true,
                 veto: None,
+                delegation_module: None,
             })
             .unwrap(),
             admin: Some(dao_interface::state::Admin::CoreModule {}),
@@ -134,6 +145,7 @@ pub trait DaoTestingSuite<Extra = Empty> {
                 },
                 close_proposal_on_execution_failure: true,
                 veto: None,
+                delegation_module: None,
             })
             .unwrap(),
             admin: Some(dao_interface::state::Admin::CoreModule {}),
@@ -160,11 +172,6 @@ pub trait DaoTestingSuite<Extra = Empty> {
         self.dao_setup(&mut dao);
 
         dao
-    }
-
-    /// get the app querier
-    fn querier(&self) -> QuerierWrapper<'_> {
-        self.base().app.wrap()
     }
 }
 
@@ -239,24 +246,20 @@ impl DaoTestingSuiteBase {
         }
     }
 
-    pub fn instantiate_cw20(&mut self, name: &str, initial_balances: Vec<Cw20Coin>) -> Addr {
-        self.app
-            .instantiate_contract(
-                self.cw20_base_id,
-                Addr::unchecked(OWNER),
-                &cw20_base::msg::InstantiateMsg {
-                    name: name.to_string(),
-                    symbol: name.to_string(),
-                    decimals: 6,
-                    initial_balances,
-                    mint: None,
-                    marketing: None,
-                },
-                &[],
-                "cw20",
-                None,
-            )
-            .unwrap()
+    pub fn cw4(&mut self) -> DaoTestingSuiteCw4 {
+        DaoTestingSuiteCw4::new(self)
+    }
+
+    pub fn cw20(&mut self) -> DaoTestingSuiteCw20 {
+        DaoTestingSuiteCw20::new(self)
+    }
+
+    pub fn cw721(&mut self) -> DaoTestingSuiteCw721 {
+        DaoTestingSuiteCw721::new(self)
+    }
+
+    pub fn token(&mut self) -> DaoTestingSuiteToken {
+        DaoTestingSuiteToken::new(self)
     }
 }
 
@@ -300,7 +303,7 @@ impl DaoTestingSuiteBase {
         let core = Addr::unchecked(instantiate_event.attributes[0].value.clone());
 
         // get voting module address
-        let voting_module: Addr = self
+        let voting_module_addr: Addr = self
             .app
             .wrap()
             .query_wasm_smart(&core, &dao_interface::msg::QueryMsg::VotingModule {})
@@ -319,35 +322,318 @@ impl DaoTestingSuiteBase {
             )
             .unwrap();
 
+        let proposal_modules = proposal_modules
+            .into_iter()
+            .map(|p| -> (Option<Addr>, Addr) {
+                let pre_propose_module: dao_voting::pre_propose::ProposalCreationPolicy = self
+                    .app
+                    .wrap()
+                    .query_wasm_smart(
+                        &p.address,
+                        &dao_proposal_single::msg::QueryMsg::ProposalCreationPolicy {},
+                    )
+                    .unwrap();
+
+                match pre_propose_module {
+                    dao_voting::pre_propose::ProposalCreationPolicy::Anyone {} => (None, p.address),
+                    dao_voting::pre_propose::ProposalCreationPolicy::Module { addr } => {
+                        (Some(addr), p.address)
+                    }
+                }
+            })
+            .collect::<Vec<_>>();
+
         TestDao {
             core_addr: core,
-            voting_module_addr: voting_module,
+            voting_module_addr,
             proposal_modules,
             x: Empty::default(),
         }
-    }
-
-    pub fn cw4(&mut self) -> DaoTestingSuiteCw4 {
-        DaoTestingSuiteCw4::new(self)
-    }
-
-    pub fn cw20(&mut self) -> DaoTestingSuiteCw20 {
-        DaoTestingSuiteCw20::new(self)
-    }
-
-    pub fn cw721(&mut self) -> DaoTestingSuiteCw721 {
-        DaoTestingSuiteCw721::new(self)
-    }
-
-    pub fn token(&mut self) -> DaoTestingSuiteToken {
-        DaoTestingSuiteToken::new(self)
     }
 }
 
 // UTILITIES
 impl DaoTestingSuiteBase {
+    /// advance the block height by N
+    pub fn advance_blocks(&mut self, n: u64) {
+        self.app.update_block(|b| b.height += n);
+    }
+
     /// advance the block height by one
     pub fn advance_block(&mut self) {
-        self.app.update_block(|b| b.height += 1);
+        self.advance_blocks(1);
+    }
+
+    /// store a contract given its maker function and return its code ID
+    pub fn store(&mut self, contract_maker: impl FnOnce() -> Box<dyn Contract<Empty>>) -> u64 {
+        self.app.store_code(contract_maker())
+    }
+
+    /// instantiate a smart contract and return its address
+    pub fn instantiate<T: Serialize + Debug>(
+        &mut self,
+        code_id: u64,
+        sender: impl Into<String>,
+        init_msg: &T,
+        send_funds: &[Coin],
+        label: impl Into<String>,
+        admin: Option<String>,
+    ) -> Addr {
+        self.app
+            .instantiate_contract(
+                code_id,
+                Addr::unchecked(sender),
+                init_msg,
+                send_funds,
+                label.into(),
+                admin,
+            )
+            .unwrap()
+    }
+
+    /// execute a smart contract and return the result
+    pub fn execute_smart<T: Serialize + Debug>(
+        &mut self,
+        sender: impl Into<String>,
+        contract_addr: impl Into<String>,
+        msg: &T,
+        send_funds: &[Coin],
+    ) -> AnyResult<AppResponse> {
+        self.app.execute_contract(
+            Addr::unchecked(sender.into()),
+            Addr::unchecked(contract_addr.into()),
+            msg,
+            send_funds,
+        )
+    }
+
+    /// execute a smart contract and expect it to succeed
+    pub fn execute_smart_ok<T: Serialize + Debug>(
+        &mut self,
+        sender: impl Into<String>,
+        contract_addr: impl Into<String>,
+        msg: &T,
+        send_funds: &[Coin],
+    ) -> AppResponse {
+        self.execute_smart(sender, contract_addr, msg, send_funds)
+            .unwrap()
+    }
+
+    /// execute a smart contract and return the error
+    pub fn execute_smart_err<T: Serialize + Debug, E: Display + Debug + Send + Sync + 'static>(
+        &mut self,
+        sender: impl Into<String>,
+        contract_addr: impl Into<String>,
+        msg: &T,
+        send_funds: &[Coin],
+    ) -> E {
+        self.execute_smart(sender, contract_addr, msg, send_funds)
+            .unwrap_err()
+            .downcast()
+            .unwrap()
+    }
+
+    /// migrate a smart contract and return the result
+    pub fn migrate<T: Serialize + Debug>(
+        &mut self,
+        sender: impl Into<String>,
+        contract_addr: impl Into<String>,
+        msg: &T,
+        code_id: u64,
+    ) -> AnyResult<AppResponse> {
+        self.app.migrate_contract(
+            Addr::unchecked(sender),
+            Addr::unchecked(contract_addr),
+            msg,
+            code_id,
+        )
+    }
+
+    /// migrate a smart contract and expect it to succeed
+    pub fn migrate_ok<T: Serialize + Debug>(
+        &mut self,
+        sender: impl Into<String>,
+        contract_addr: impl Into<String>,
+        msg: &T,
+        code_id: u64,
+    ) -> AppResponse {
+        self.migrate(sender, contract_addr, msg, code_id).unwrap()
+    }
+
+    /// migrate a smart contract and return the error
+    pub fn migrate_err<T: Serialize + Debug, E: Display + Debug + Send + Sync + 'static>(
+        &mut self,
+        sender: impl Into<String>,
+        contract_addr: impl Into<String>,
+        msg: &T,
+        code_id: u64,
+    ) -> E {
+        self.migrate(sender, contract_addr, msg, code_id)
+            .unwrap_err()
+            .downcast()
+            .unwrap()
+    }
+
+    /// instantiate a cw20 contract and return its address
+    pub fn instantiate_cw20(&mut self, name: &str, initial_balances: Vec<Cw20Coin>) -> Addr {
+        self.instantiate(
+            self.cw20_base_id,
+            OWNER,
+            &cw20_base::msg::InstantiateMsg {
+                name: name.to_string(),
+                symbol: name.to_string(),
+                decimals: 6,
+                initial_balances,
+                mint: None,
+                marketing: None,
+            },
+            &[],
+            "cw20",
+            None,
+        )
+    }
+
+    /// propose a single choice proposal and return the proposal module address,
+    /// proposal ID, and proposal
+    pub fn propose_single_choice<T>(
+        &mut self,
+        dao: &TestDao<T>,
+        proposer: impl Into<String>,
+        title: impl Into<String>,
+        msgs: Vec<CosmosMsg>,
+    ) -> (
+        Addr,
+        u64,
+        dao_proposal_single::proposal::SingleChoiceProposal,
+    ) {
+        let pre_propose_msg = dao_pre_propose_single::ExecuteMsg::Propose {
+            msg: dao_pre_propose_single::ProposeMessage::Propose {
+                title: title.into(),
+                description: "".to_string(),
+                msgs,
+                vote: None,
+            },
+        };
+
+        let (pre_propose_module, proposal_module) = &dao.proposal_modules[0];
+
+        self.execute_smart_ok(
+            proposer,
+            pre_propose_module.as_ref().unwrap(),
+            &pre_propose_msg,
+            &[],
+        );
+
+        let proposal_id: u64 = self
+            .querier()
+            .query_wasm_smart(
+                proposal_module.clone(),
+                &dao_proposal_single::msg::QueryMsg::ProposalCount {},
+            )
+            .unwrap();
+
+        let proposal = self.get_single_choice_proposal(proposal_module, proposal_id);
+
+        (proposal_module.clone(), proposal_id, proposal)
+    }
+
+    /// vote on a single choice proposal
+    pub fn vote_single_choice<T>(
+        &mut self,
+        dao: &TestDao<T>,
+        voter: impl Into<String>,
+        proposal_id: u64,
+        vote: dao_voting::voting::Vote,
+    ) {
+        self.execute_smart_ok(
+            voter,
+            &dao.proposal_modules[0].1,
+            &dao_proposal_single::msg::ExecuteMsg::Vote {
+                proposal_id,
+                vote,
+                rationale: None,
+            },
+            &[],
+        );
+    }
+
+    /// add vote hook to all proposal modules
+    pub fn add_vote_hook<T>(&mut self, dao: &TestDao<T>, addr: impl Into<String>) {
+        let address = addr.into();
+        dao.proposal_modules
+            .iter()
+            .for_each(|(_, proposal_module)| {
+                self.execute_smart_ok(
+                    dao.core_addr.clone(),
+                    proposal_module.clone(),
+                    &dao_proposal_single::msg::ExecuteMsg::AddVoteHook {
+                        address: address.clone(),
+                    },
+                    &[],
+                );
+            });
+    }
+
+    /// set the delegation module for all proposal modules
+    pub fn set_delegation_module<T>(&mut self, dao: &TestDao<T>, module: impl Into<String>) {
+        let module = module.into();
+        dao.proposal_modules
+            .iter()
+            .for_each(|(_, proposal_module)| {
+                self.execute_smart_ok(
+                    dao.core_addr.clone(),
+                    proposal_module.clone(),
+                    &dao_proposal_single::msg::ExecuteMsg::UpdateDelegationModule {
+                        module: module.clone(),
+                    },
+                    &[],
+                );
+            });
+    }
+}
+
+/// QUERIES
+impl DaoTestingSuiteBase {
+    /// get the app querier
+    pub fn querier(&self) -> QuerierWrapper<'_> {
+        self.app.wrap()
+    }
+
+    /// get a single choice proposal
+    pub fn get_single_choice_proposal(
+        &self,
+        proposal_module: impl Into<String>,
+        proposal_id: u64,
+    ) -> dao_proposal_single::proposal::SingleChoiceProposal {
+        self.querier()
+            .query_wasm_smart::<dao_proposal_single::query::ProposalResponse>(
+                Addr::unchecked(proposal_module),
+                &dao_proposal_single::msg::QueryMsg::Proposal { proposal_id },
+            )
+            .unwrap()
+            .proposal
+    }
+
+    /// assert vote count on single choice proposal
+    pub fn assert_single_choice_votes_count(
+        &self,
+        proposal_module: impl Into<String>,
+        proposal_id: u64,
+        vote: dao_voting::voting::Vote,
+        count: impl Into<Uint128>,
+    ) {
+        let proposal = self.get_single_choice_proposal(proposal_module, proposal_id);
+        assert_eq!(proposal.votes.get(vote), count.into());
+    }
+
+    /// assert status on single choice proposal
+    pub fn assert_single_choice_status(
+        &self,
+        proposal_module: impl Into<String>,
+        proposal_id: u64,
+        status: dao_voting::status::Status,
+    ) {
+        let proposal = self.get_single_choice_proposal(proposal_module, proposal_id);
+        assert_eq!(proposal.status, status);
     }
 }
