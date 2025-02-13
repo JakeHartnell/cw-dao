@@ -59,6 +59,7 @@ pub const DELEGATIONS: SnapshotVectorMap<Addr, Delegation> = SnapshotVectorMap::
     "d__active",
     "d__active__checkpoints",
     "d__active__changelog",
+    "d__active__last_update",
 );
 
 /// map (delegator, delegate) -> (ID, expiration_block) of the delegation in the

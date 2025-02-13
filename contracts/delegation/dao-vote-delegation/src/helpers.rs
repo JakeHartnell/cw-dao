@@ -43,9 +43,8 @@ pub fn get_udvp(
     height: u64,
 ) -> StdResult<Uint128> {
     // if no unvoted delegated VP exists for the proposal, use the delegate's
-    // total delegated VP at that height. UNVOTED_DELEGATED_VP gets set when the
-    // delegate or one of their delegators casts a vote. if empty, none of them
-    // have voted yet.
+    // total delegated VP at that height. UNVOTED_DELEGATED_VP gets set when one
+    // of their delegators casts a vote. if empty, none of them have voted yet.
     match UNVOTED_DELEGATED_VP.may_load(deps.storage, (delegate, proposal_module, proposal_id))? {
         Some(vp) => Ok(vp),
         None => Ok(DELEGATED_VP

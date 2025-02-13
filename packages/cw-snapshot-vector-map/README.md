@@ -54,6 +54,7 @@ let svm: SnapshotVectorMap<Addr, String> = SnapshotVectorMap::new(
     "svm__active",
     "svm__active__checkpoints",
     "svm__active__changelog",
+    "svm__active__last_update",
 );
 let key = Addr::unchecked("leaf");
 let first = "first".to_string();

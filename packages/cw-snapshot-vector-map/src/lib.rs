@@ -1,9 +1,11 @@
 #![doc = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/README.md"))]
 
+use std::cmp::Ordering;
+
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-use cosmwasm_std::{StdResult, Storage};
+use cosmwasm_std::{StdError, StdResult, Storage};
 use cw_storage_plus::{KeyDeserialize, Map, Prefixer, PrimaryKey, SnapshotMap, Strategy};
 
 /// Map to a vector that allows reading the subset of items that existed at a
@@ -17,6 +19,9 @@ pub struct SnapshotVectorMap<'a, K, V> {
     /// The IDs of the items that are active for a key at a given height, and
     /// optionally the height at which they expire.
     active: SnapshotMap<'a, K, Vec<(u64, Option<u64>)>>,
+    /// The last height at which the active list was updated for each key, to
+    /// enforce that updates (push/remove) are done in order.
+    last_active_update: Map<'a, K, u64>,
 }
 
 /// A loaded item from the vector, including its ID and expiration.
@@ -45,6 +50,7 @@ impl<K, V> SnapshotVectorMap<'_, K, V> {
     ///     "data__active",
     ///     "data__active__checkpoints",
     ///     "data__active__changelog",
+    ///     "data__active__last_update",
     /// );
     /// ```
     pub const fn new(
@@ -53,6 +59,7 @@ impl<K, V> SnapshotVectorMap<'_, K, V> {
         active_key: &'static str,
         active_checkpoints_key: &'static str,
         active_changelog_key: &'static str,
+        last_active_update_key: &'static str,
     ) -> Self {
         SnapshotVectorMap {
             items: Map::new(items_key),
@@ -63,6 +70,7 @@ impl<K, V> SnapshotVectorMap<'_, K, V> {
                 active_changelog_key,
                 Strategy::EveryBlock,
             ),
+            last_active_update: Map::new(last_active_update_key),
         }
     }
 }
@@ -89,6 +97,9 @@ where
         curr_height: u64,
         expire_in: Option<u64>,
     ) -> StdResult<((u64, Option<u64>), usize)> {
+        // ensure push operations are performed at or after the last update
+        self.validate_update_order(store, k, curr_height)?;
+
         // get next ID for the key, defaulting to 0
         let next_id = self
             .next_ids
@@ -130,6 +141,9 @@ where
         id: u64,
         curr_height: u64,
     ) -> StdResult<(V, usize)> {
+        // ensure remove operations are performed at or after the last update
+        self.validate_update_order(store, k, curr_height)?;
+
         // get active list for the key
         let mut active = self.active.may_load(store, k.clone())?.unwrap_or_default();
 
@@ -146,6 +160,29 @@ where
 
         // return the item and the number of items remaining
         Ok((item, active.len()))
+    }
+
+    /// Validate that updates are performed at or after the last update.
+    pub fn validate_update_order(
+        &self,
+        store: &mut dyn Storage,
+        k: &K,
+        curr_height: u64,
+    ) -> StdResult<()> {
+        let last_active_update = self
+            .last_active_update
+            .may_load(store, k.clone())?
+            .unwrap_or_default();
+        match curr_height.cmp(&last_active_update) {
+            Ordering::Less => Err(StdError::generic_err(format!(
+                "update must be performed at or after the last update ({last_active_update})",
+            ))),
+            Ordering::Equal => Ok(()),
+            Ordering::Greater => {
+                // update store if greater than the last active update
+                self.last_active_update.save(store, k.clone(), &curr_height)
+            }
+        }
     }
 
     /// Loads paged items at the given block height that are not expired. This

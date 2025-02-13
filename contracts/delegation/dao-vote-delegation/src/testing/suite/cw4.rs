@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
-use cosmwasm_std::Decimal;
+use cosmwasm_std::{Addr, Decimal};
 use dao_testing::{Cw4TestDao, DaoTestingSuite};
 
 use super::base::DaoVoteDelegationTestingSuiteBase;
@@ -110,5 +110,19 @@ impl Cw4DaoVoteDelegationTestingSuite {
 
         // set the delegation module for all proposal modules
         self.set_delegation_module(&dao, &delegation_addr);
+
+        // ensure delegation modules are set
+        dao.proposal_modules.iter().for_each(|(_, module)| {
+            let delegation_module = self
+                .querier()
+                .query_wasm_smart::<Option<Addr>>(
+                    module,
+                    &dao_proposal_single::msg::QueryMsg::DelegationModule {},
+                )
+                .unwrap()
+                .unwrap();
+
+            assert_eq!(delegation_module, Addr::unchecked(delegation_addr.clone()));
+        });
     }
 }

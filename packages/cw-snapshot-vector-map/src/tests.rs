@@ -1,4 +1,4 @@
-use cosmwasm_std::{testing::mock_dependencies, Addr};
+use cosmwasm_std::{testing::mock_dependencies, Addr, StdError};
 
 use crate::{LoadedItem, SnapshotVectorMap};
 
@@ -11,6 +11,7 @@ fn test_basic() {
         "svm__active",
         "svm__active__checkpoints",
         "svm__active__changelog",
+        "svm__active__last_update",
     );
     let k1 = &Addr::unchecked("haon");
     let k2 = &Addr::unchecked("ekez");
@@ -89,6 +90,31 @@ fn test_basic() {
             }
         ]
     );
+
+    // cannot push in the past
+    for i in 0..4 {
+        let err = svm.push(storage, k1, &4, i, None).unwrap_err();
+        assert_eq!(
+            err,
+            StdError::generic_err("update must be performed at or after the last update (4)")
+        );
+    }
+
+    // can push at the same height as the last update (block 4)
+    let ((added_id, _), _) = svm.push(storage, k1, &4, 4, None).unwrap();
+
+    // cannot remove in the past
+    for i in 0..4 {
+        let err = svm.remove(storage, k1, 0, i).unwrap_err();
+        assert_eq!(
+            err,
+            StdError::generic_err("update must be performed at or after the last update (4)")
+        );
+    }
+
+    // can remove at the same height as the last update
+    // remove item we just added from k1 at block 4
+    svm.remove(storage, k1, added_id, 4).unwrap();
 }
 
 #[test]
@@ -100,6 +126,7 @@ fn test_expiration() {
         "svm__active",
         "svm__active__checkpoints",
         "svm__active__changelog",
+        "svm__active__last_update",
     );
     let k1 = &Addr::unchecked("haon");
 
